@@ -31,10 +31,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 responses
+// Handle error responses - normalize validation errors & handle 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Normalize Pydantic validation errors: convert detail array to string
+    // This prevents React crash: "Objects are not valid as a React child"
+    if (error.response?.data?.detail) {
+      const detail = error.response.data.detail;
+      if (Array.isArray(detail)) {
+        error.response.data.detail = detail
+          .map((e: any) => typeof e === 'object' ? (e.msg || JSON.stringify(e)) : String(e))
+          .join(', ');
+      } else if (typeof detail === 'object') {
+        error.response.data.detail = detail.msg || JSON.stringify(detail);
+      }
+    }
     if (error.response?.status === 401) {
       Cookies.remove('access_token');
       Cookies.remove('refresh_token');

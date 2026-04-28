@@ -66,7 +66,18 @@ export default function FacturesPage() {
     e.preventDefault();
     if (form.items.length === 0 || !form.items[0].description) { toast.error('Ajoutez au moins un article'); return; }
     try {
-      await invoicesAPI.create({ ...form, invoice_type: 'facture' });
+      // Clean up empty strings to null for optional UUID fields
+      const payload = {
+        ...form,
+        invoice_type: 'facture',
+        client_id: form.client_id || null,
+        due_date: form.due_date || null,
+        items: form.items.map(item => ({
+          ...item,
+          product_id: item.product_id || null,
+        })),
+      };
+      await invoicesAPI.create(payload);
       toast.success('Facture créée !');
       setShowModal(false); load();
     } catch (err: any) { toast.error(getErrorMessage(err, 'Erreur lors de la création')); }
