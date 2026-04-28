@@ -26,15 +26,14 @@ export async function GET(
     }
 
     const data = await response.arrayBuffer();
-    const contentType = format === 'pdf' ? 'application/pdf' : 'application/xml';
+    const contentType = format === 'pdf' ? 'application/pdf' : 'application/octet-stream';
     const disposition = format === 'pdf' ? 'inline' : 'attachment';
-    const ext = format;
 
     return new NextResponse(data, {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `${disposition}; filename="facture.${ext}"`,
+        'Content-Disposition': `${disposition}; filename="facture.${format}"`,
       },
     });
   } catch {

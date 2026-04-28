@@ -69,28 +69,10 @@ export default function AchatsPage() {
     try { await invoicesAPI.update(id, { status }); toast.success('Statut mis à jour'); load(); } catch { toast.error('Erreur'); }
   };
 
-  const handleDownload = async (id: string, format: 'pdf' | 'xml') => {
+  const handleDownload = (id: string, format: 'pdf' | 'xml') => {
     const token = Cookies.get('access_token');
     if (!token) { toast.error('Veuillez vous reconnecter'); return; }
-    const url = `/api/download/${id}/${format}?token=${token}`;
-    if (format === 'pdf') {
-      window.open(url, '_blank');
-    } else {
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error('Erreur');
-        const blob = await resp.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = `achat.xml`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(blobUrl);
-        document.body.removeChild(a);
-        toast.success('XML téléchargé');
-      } catch { toast.error('Erreur lors du téléchargement XML'); }
-    }
+    window.open(`/api/download/${id}/${format}?token=${token}`, '_blank');
   };
 
   const openCreate = () => {
