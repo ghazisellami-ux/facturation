@@ -92,11 +92,19 @@ export default function FacturesPage() {
     try { await invoicesAPI.update(id, { status }); toast.success('Statut mis à jour'); load(); } catch { toast.error('Erreur'); }
   };
 
-  const handleDownload = (id: string, format: 'pdf' | 'xml') => {
-    const token = require('js-cookie').get('access_token');
-    const url = format === 'pdf' ? invoicesAPI.downloadPdf(id) : invoicesAPI.downloadXml(id);
-    // Open in new tab with auth token
-    window.open(`${url}?token=${token}`, '_blank');
+  const handleDownload = async (id: string, format: 'pdf' | 'xml') => {
+    try {
+      const response = format === 'pdf' ? await invoicesAPI.downloadPdf(id) : await invoicesAPI.downloadXml(id);
+      const blob = new Blob([response.data], { type: format === 'pdf' ? 'application/pdf' : 'application/xml' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `facture.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch { toast.error('Erreur lors du téléchargement'); }
   };
 
   return (

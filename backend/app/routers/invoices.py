@@ -370,14 +370,12 @@ def delete_invoice(
 @router.get("/{invoice_id}/pdf")
 def download_invoice_pdf(
     invoice_id: str,
-    token: str = Query(..., description="JWT access token"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Télécharger la facture en PDF."""
     from app.utils.pdf_generator import generate_invoice_pdf
-    from app.utils.auth import get_current_user_from_token
 
-    current_user = get_current_user_from_token(token, db)
     company = get_user_company(db, current_user)
     invoice = db.query(Invoice).filter(
         Invoice.id == invoice_id, Invoice.company_id == company.id
@@ -386,9 +384,10 @@ def download_invoice_pdf(
         raise HTTPException(status_code=404, detail="Facture non trouvée")
 
     client_obj = db.query(Client).filter(Client.id == invoice.client_id).first() if invoice.client_id else None
+    supplier_obj = db.query(Supplier).filter(Supplier.id == invoice.supplier_id).first() if invoice.supplier_id else None
     items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).order_by(InvoiceItem.sort_order).all()
 
-    pdf_bytes = generate_invoice_pdf(invoice, company, client_obj, items)
+    pdf_bytes = generate_invoice_pdf(invoice, company, client_obj or supplier_obj, items)
     filename = f"{invoice.reference}.pdf"
 
     return Response(
@@ -401,14 +400,12 @@ def download_invoice_pdf(
 @router.get("/{invoice_id}/xml")
 def download_invoice_xml(
     invoice_id: str,
-    token: str = Query(..., description="JWT access token"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Télécharger la facture en XML."""
     from app.utils.pdf_generator import generate_invoice_xml
-    from app.utils.auth import get_current_user_from_token
 
-    current_user = get_current_user_from_token(token, db)
     company = get_user_company(db, current_user)
     invoice = db.query(Invoice).filter(
         Invoice.id == invoice_id, Invoice.company_id == company.id
@@ -417,9 +414,10 @@ def download_invoice_xml(
         raise HTTPException(status_code=404, detail="Facture non trouvée")
 
     client_obj = db.query(Client).filter(Client.id == invoice.client_id).first() if invoice.client_id else None
+    supplier_obj = db.query(Supplier).filter(Supplier.id == invoice.supplier_id).first() if invoice.supplier_id else None
     items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).order_by(InvoiceItem.sort_order).all()
 
-    xml_content = generate_invoice_xml(invoice, company, client_obj, items)
+    xml_content = generate_invoice_xml(invoice, company, client_obj or supplier_obj, items)
     filename = f"{invoice.reference}.xml"
 
     return Response(
