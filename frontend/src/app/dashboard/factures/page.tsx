@@ -93,11 +93,27 @@ export default function FacturesPage() {
     try { await invoicesAPI.update(id, { status }); toast.success('Statut mis à jour'); load(); } catch { toast.error('Erreur'); }
   };
 
-  const handleDownload = (id: string, format: 'pdf' | 'xml') => {
+  const handleDownload = async (id: string, format: 'pdf' | 'xml') => {
     const token = Cookies.get('access_token');
     if (!token) { toast.error('Veuillez vous reconnecter'); return; }
     const path = format === 'pdf' ? invoicesAPI.downloadPdf(id) : invoicesAPI.downloadXml(id);
-    window.open(`http://localhost:8001${path}?token=${token}`, '_blank');
+    const url = `http://localhost:8001${path}?token=${token}`;
+    if (format === 'pdf') {
+      window.open(url, '_blank');
+    } else {
+      try {
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `facture_${id}.xml`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+      } catch { toast.error('Erreur lors du téléchargement XML'); }
+    }
   };
 
   return (
