@@ -76,13 +76,11 @@ export default function AchatsPage() {
     if (format === 'pdf') {
       window.open(url, '_blank');
     } else {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'facture_achat.xml';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      setTimeout(() => document.body.removeChild(iframe), 30000);
     }
   };
 
