@@ -98,14 +98,7 @@ export default function FacturesPage() {
   const handleDownload = (id: string, format: 'pdf' | 'xml') => {
     const token = Cookies.get('access_token');
     if (!token) { toast.error('Veuillez vous reconnecter'); return; }
-    const url = `/api/download/${id}/${format}?token=${token}`;
-    if (format === 'pdf') {
-      window.open(url, '_blank');
-    } else {
-      // Naviguer vers l'URL de téléchargement - le Content-Disposition: attachment
-      // empêche la navigation et force le téléchargement
-      window.location.href = url;
-    }
+    window.open(`http://localhost:8001/api/invoices/${id}/${format}?token=${token}`, '_blank');
   };
 
   return (

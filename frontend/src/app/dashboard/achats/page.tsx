@@ -72,12 +72,7 @@ export default function AchatsPage() {
   const handleDownload = (id: string, format: 'pdf' | 'xml') => {
     const token = Cookies.get('access_token');
     if (!token) { toast.error('Veuillez vous reconnecter'); return; }
-    const url = `/api/download/${id}/${format}?token=${token}`;
-    if (format === 'pdf') {
-      window.open(url, '_blank');
-    } else {
-      window.location.href = url;
-    }
+    window.open(`http://localhost:8001/api/invoices/${id}/${format}?token=${token}`, '_blank');
   };
 
   const openCreate = () => {
