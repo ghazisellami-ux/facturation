@@ -24,7 +24,9 @@ export default function FacturesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ client_id: '', date: new Date().toISOString().split('T')[0], due_date: '', notes: '', timbre_fiscal: 1.0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] as InvoiceItem[] });
+  const [form, setForm] = useState({ client_id: '', date: '', due_date: '', notes: '', timbre_fiscal: 1.0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] as InvoiceItem[] });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); setForm(f => ({ ...f, date: new Date().toISOString().split('T')[0] })); }, []);
 
   const load = () => {
     Promise.all([
@@ -93,10 +95,28 @@ export default function FacturesPage() {
     try { await invoicesAPI.update(id, { status }); toast.success('Statut mis à jour'); load(); } catch { toast.error('Erreur'); }
   };
 
-  const handleDownload = (id: string, format: 'pdf' | 'xml') => {
+  const handleDownload = async (id: string, format: 'pdf' | 'xml') => {
     const token = Cookies.get('access_token');
     if (!token) { toast.error('Veuillez vous reconnecter'); return; }
-    window.open(`/api/download/${id}/${format}?token=${token}`, '_blank');
+    const url = `/api/download/${id}/${format}?token=${token}`;
+    if (format === 'pdf') {
+      window.open(url, '_blank');
+    } else {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Erreur');
+        const blob = await resp.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `facture.xml`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+        toast.success('XML téléchargé');
+      } catch { toast.error('Erreur lors du téléchargement XML'); }
+    }
   };
 
   return (
