@@ -95,10 +95,9 @@ export default function FacturesPage() {
     try { await invoicesAPI.update(id, { status }); toast.success('Statut mis à jour'); load(); } catch { toast.error('Erreur'); }
   };
 
-  const handleDownload = (id: string, format: 'pdf' | 'xml') => {
+  const getDownloadUrl = (id: string, format: 'pdf' | 'xml') => {
     const token = Cookies.get('access_token');
-    if (!token) { toast.error('Veuillez vous reconnecter'); return; }
-    window.open(`http://localhost:8001/api/invoices/${id}/${format}?token=${token}`, '_blank');
+    return token ? `http://localhost:8001/api/invoices/${id}/${format}?token=${token}` : '';
   };
 
   return (
@@ -132,8 +131,8 @@ export default function FacturesPage() {
                     </select>
                   </td>
                   <td>
-                    <button className="btn btn-icon" onClick={() => handleDownload(inv.id, 'pdf')} title="Télécharger PDF" style={{ color: 'var(--primary)' }}><FiDownload /></button>
-                    <button className="btn btn-icon" onClick={() => handleDownload(inv.id, 'xml')} title="Télécharger XML" style={{ color: '#f59e0b' }}><FiCode /></button>
+                    <a href={getDownloadUrl(inv.id, 'pdf')} target="_blank" rel="noopener noreferrer" className="btn btn-icon" title="Télécharger PDF" style={{ color: 'var(--primary)' }}><FiDownload /></a>
+                    <a href={getDownloadUrl(inv.id, 'xml')} target="_blank" rel="noopener noreferrer" className="btn btn-icon" title="Télécharger XML" style={{ color: '#f59e0b' }}><FiCode /></a>
                     <button className="btn btn-icon" onClick={() => handleDelete(inv.id)} style={{ color: 'var(--danger)' }}><FiTrash2 /></button>
                   </td>
                 </tr>
