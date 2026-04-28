@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { invoicesAPI, clientsAPI, productsAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiFileText, FiEye, FiDownload, FiCode } from 'react-icons/fi';
+import Cookies from 'js-cookie';
 import Link from 'next/link';
 
 const statusMap: Record<string, { label: string; className: string }> = {
@@ -92,19 +93,11 @@ export default function FacturesPage() {
     try { await invoicesAPI.update(id, { status }); toast.success('Statut mis à jour'); load(); } catch { toast.error('Erreur'); }
   };
 
-  const handleDownload = async (id: string, format: 'pdf' | 'xml') => {
-    try {
-      const response = format === 'pdf' ? await invoicesAPI.downloadPdf(id) : await invoicesAPI.downloadXml(id);
-      const blob = new Blob([response.data], { type: format === 'pdf' ? 'application/pdf' : 'application/xml' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `facture.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch { toast.error('Erreur lors du téléchargement'); }
+  const handleDownload = (id: string, format: 'pdf' | 'xml') => {
+    const token = Cookies.get('access_token');
+    if (!token) { toast.error('Veuillez vous reconnecter'); return; }
+    const path = format === 'pdf' ? invoicesAPI.downloadPdf(id) : invoicesAPI.downloadXml(id);
+    window.open(`http://localhost:8001${path}?token=${token}`, '_blank');
   };
 
   return (

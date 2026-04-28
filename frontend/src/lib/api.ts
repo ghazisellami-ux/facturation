@@ -108,8 +108,8 @@ export const invoicesAPI = {
   update: (id: string, data: any) => api.put(`/api/invoices/${id}`, data),
   delete: (id: string) => api.delete(`/api/invoices/${id}`),
   convert: (id: string) => api.post(`/api/invoices/${id}/convert`),
-  downloadPdf: (id: string) => api.get(`/api/invoices/${id}/pdf`, { responseType: 'blob' }),
-  downloadXml: (id: string) => api.get(`/api/invoices/${id}/xml`, { responseType: 'blob' }),
+  downloadPdf: (id: string) => `/api/invoices/${id}/pdf`,
+  downloadXml: (id: string) => `/api/invoices/${id}/xml`,
 };
 
 // Suppliers API

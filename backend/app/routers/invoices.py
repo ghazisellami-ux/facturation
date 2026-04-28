@@ -370,12 +370,16 @@ def delete_invoice(
 @router.get("/{invoice_id}/pdf")
 def download_invoice_pdf(
     invoice_id: str,
-    current_user: User = Depends(get_current_user),
+    token: Optional[str] = Query(None, description="JWT access token"),
     db: Session = Depends(get_db)
 ):
     """Télécharger la facture en PDF."""
     from app.utils.pdf_generator import generate_invoice_pdf
+    from app.utils.auth import get_current_user_from_token
 
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requis")
+    current_user = get_current_user_from_token(token, db)
     company = get_user_company(db, current_user)
     invoice = db.query(Invoice).filter(
         Invoice.id == invoice_id, Invoice.company_id == company.id
@@ -393,19 +397,26 @@ def download_invoice_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Access-Control-Allow-Origin": "*",
+        }
     )
 
 
 @router.get("/{invoice_id}/xml")
 def download_invoice_xml(
     invoice_id: str,
-    current_user: User = Depends(get_current_user),
+    token: Optional[str] = Query(None, description="JWT access token"),
     db: Session = Depends(get_db)
 ):
     """Télécharger la facture en XML."""
     from app.utils.pdf_generator import generate_invoice_xml
+    from app.utils.auth import get_current_user_from_token
 
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requis")
+    current_user = get_current_user_from_token(token, db)
     company = get_user_company(db, current_user)
     invoice = db.query(Invoice).filter(
         Invoice.id == invoice_id, Invoice.company_id == company.id
@@ -423,7 +434,10 @@ def download_invoice_xml(
     return Response(
         content=xml_content.encode('utf-8'),
         media_type="application/xml",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Allow-Origin": "*",
+        }
     )
 
 
