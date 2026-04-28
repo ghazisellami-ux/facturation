@@ -102,12 +102,9 @@ export default function FacturesPage() {
     if (format === 'pdf') {
       window.open(url, '_blank');
     } else {
-      // Iframe caché pour forcer le téléchargement natif
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = url;
-      document.body.appendChild(iframe);
-      setTimeout(() => document.body.removeChild(iframe), 30000);
+      // Naviguer vers l'URL de téléchargement - le Content-Disposition: attachment
+      // empêche la navigation et force le téléchargement
+      window.location.href = url;
     }
   };
 
