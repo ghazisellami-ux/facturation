@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime, date
+import datetime
 
 
 class InvoiceItemCreate(BaseModel):
@@ -36,8 +36,8 @@ class InvoiceItemResponse(BaseModel):
 class InvoiceCreate(BaseModel):
     client_id: Optional[str] = None
     invoice_type: str = "facture"
-    date: date = None
-    due_date: Optional[date] = None
+    date: Optional[datetime.date] = None
+    due_date: Optional[datetime.date] = None
     currency: str = "TND"
     notes: Optional[str] = None
     conditions: Optional[str] = None
@@ -48,8 +48,8 @@ class InvoiceCreate(BaseModel):
 class InvoiceUpdate(BaseModel):
     client_id: Optional[str] = None
     status: Optional[str] = None
-    date: Optional[date] = None
-    due_date: Optional[date] = None
+    date: Optional[datetime.date] = None
+    due_date: Optional[datetime.date] = None
     currency: Optional[str] = None
     notes: Optional[str] = None
     conditions: Optional[str] = None
@@ -64,8 +64,8 @@ class InvoiceResponse(BaseModel):
     status: str
     client_id: Optional[str] = None
     client_name: Optional[str] = None
-    date: date
-    due_date: Optional[date] = None
+    date: datetime.date
+    due_date: Optional[datetime.date] = None
     subtotal: float
     discount_amount: float
     tva_amount: float
@@ -78,7 +78,7 @@ class InvoiceResponse(BaseModel):
     notes: Optional[str] = None
     conditions: Optional[str] = None
     items: List[InvoiceItemResponse] = []
-    created_at: datetime
+    created_at: datetime.datetime
 
     class Config:
         from_attributes = True
@@ -90,13 +90,13 @@ class InvoiceListResponse(BaseModel):
     invoice_type: str
     status: str
     client_name: Optional[str] = None
-    date: date
-    due_date: Optional[date] = None
+    date: datetime.date
+    due_date: Optional[datetime.date] = None
     total: float
     amount_paid: float
     balance_due: float
     currency: str
-    created_at: datetime
+    created_at: datetime.datetime
 
     class Config:
         from_attributes = True
