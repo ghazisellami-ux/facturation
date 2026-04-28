@@ -9,6 +9,7 @@ import enum
 class InvoiceType(str, enum.Enum):
     FACTURE = "facture"
     DEVIS = "devis"
+    FACTURE_ACHAT = "facture_achat"
     BON_LIVRAISON = "bon_livraison"
     BON_COMMANDE = "bon_commande"
     AVOIR = "avoir"
@@ -32,6 +33,7 @@ class Invoice(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     company_id = Column(String, ForeignKey("companies.id"), nullable=False)
     client_id = Column(String, ForeignKey("clients.id"), nullable=True)
+    supplier_id = Column(String, ForeignKey("suppliers.id"), nullable=True)
     reference = Column(String, nullable=False, index=True)
     invoice_type = Column(String, default=InvoiceType.FACTURE.value)
     status = Column(String, default=InvoiceStatus.BROUILLON.value)
@@ -63,6 +65,7 @@ class Invoice(Base):
     # Relationships
     company = relationship("Company", back_populates="invoices")
     client = relationship("Client", back_populates="invoices")
+    supplier = relationship("Supplier", back_populates="invoices")
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="invoice", cascade="all, delete-orphan")
     source_invoice = relationship("Invoice", remote_side=[id], foreign_keys=[source_invoice_id])

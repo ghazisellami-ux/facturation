@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, extract
 from typing import List, Optional
@@ -8,6 +9,7 @@ from app.models.user import User
 from app.models.company import Company
 from app.models.client import Client
 from app.models.product import Product
+from app.models.supplier import Supplier
 from app.models.invoice import Invoice, InvoiceItem, InvoiceType, InvoiceStatus
 from app.schemas.invoice import (
     InvoiceCreate, InvoiceUpdate, InvoiceResponse,
@@ -50,6 +52,14 @@ def generate_reference(db: Session, company: Company, invoice_type: str) -> str:
         prefix = company.devis_prefix
         next_num = int(company.devis_next_number)
         company.devis_next_number = str(next_num + 1)
+    elif invoice_type == InvoiceType.FACTURE_ACHAT.value:
+        prefix = "ACH"
+        # Count existing purchase invoices this year for numbering
+        count = db.query(Invoice).filter(
+            Invoice.company_id == company.id,
+            Invoice.invoice_type == InvoiceType.FACTURE_ACHAT.value,
+        ).count()
+        next_num = count + 1
     else:
         prefix = company.invoice_prefix
         next_num = int(company.invoice_next_number)
@@ -84,12 +94,14 @@ def list_invoices(
     result = []
     for inv in invoices:
         client = db.query(Client).filter(Client.id == inv.client_id).first() if inv.client_id else None
+        supplier = db.query(Supplier).filter(Supplier.id == inv.supplier_id).first() if inv.supplier_id else None
+        display_name = client.name if client else (supplier.name if supplier else None)
         result.append(InvoiceListResponse(
             id=inv.id,
             reference=inv.reference,
             invoice_type=inv.invoice_type,
             status=inv.status,
-            client_name=client.name if client else None,
+            client_name=display_name,
             date=inv.date,
             due_date=inv.due_date,
             total=inv.total,
@@ -117,6 +129,7 @@ def create_invoice(
     invoice = Invoice(
         company_id=company.id,
         client_id=data.client_id,
+        supplier_id=data.supplier_id,
         reference=reference,
         invoice_type=data.invoice_type,
         date=data.date or date.today(),
@@ -181,6 +194,7 @@ def create_invoice(
         invoice_type=invoice.invoice_type,
         status=invoice.status,
         client_id=invoice.client_id,
+        supplier_id=invoice.supplier_id,
         client_name=client.name if client else None,
         date=invoice.date,
         due_date=invoice.due_date,
@@ -351,6 +365,69 @@ def delete_invoice(
         raise HTTPException(status_code=404, detail="Facture non trouvée")
     db.delete(invoice)
     db.commit()
+
+
+@router.get("/{invoice_id}/pdf")
+def download_invoice_pdf(
+    invoice_id: str,
+    token: str = Query(..., description="JWT access token"),
+    db: Session = Depends(get_db)
+):
+    """Télécharger la facture en PDF."""
+    from app.utils.pdf_generator import generate_invoice_pdf
+    from app.utils.auth import get_current_user_from_token
+
+    current_user = get_current_user_from_token(token, db)
+    company = get_user_company(db, current_user)
+    invoice = db.query(Invoice).filter(
+        Invoice.id == invoice_id, Invoice.company_id == company.id
+    ).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+
+    client_obj = db.query(Client).filter(Client.id == invoice.client_id).first() if invoice.client_id else None
+    items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).order_by(InvoiceItem.sort_order).all()
+
+    pdf_bytes = generate_invoice_pdf(invoice, company, client_obj, items)
+    filename = f"{invoice.reference}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@router.get("/{invoice_id}/xml")
+def download_invoice_xml(
+    invoice_id: str,
+    token: str = Query(..., description="JWT access token"),
+    db: Session = Depends(get_db)
+):
+    """Télécharger la facture en XML."""
+    from app.utils.pdf_generator import generate_invoice_xml
+    from app.utils.auth import get_current_user_from_token
+
+    current_user = get_current_user_from_token(token, db)
+    company = get_user_company(db, current_user)
+    invoice = db.query(Invoice).filter(
+        Invoice.id == invoice_id, Invoice.company_id == company.id
+    ).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Facture non trouvée")
+
+    client_obj = db.query(Client).filter(Client.id == invoice.client_id).first() if invoice.client_id else None
+    items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).order_by(InvoiceItem.sort_order).all()
+
+    xml_content = generate_invoice_xml(invoice, company, client_obj, items)
+    filename = f"{invoice.reference}.xml"
+
+    return Response(
+        content=xml_content.encode('utf-8'),
+        media_type="application/xml",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
 
 
 @router.post("/{invoice_id}/convert", response_model=InvoiceResponse)

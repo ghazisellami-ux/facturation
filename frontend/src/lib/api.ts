@@ -71,6 +71,7 @@ export const authAPI = {
   }) => api.post('/api/auth/register', data),
   getMe: () => api.get('/api/auth/me'),
   getCompany: () => api.get('/api/auth/company'),
+  updateCompany: (data: any) => api.put('/api/auth/company', data),
 };
 
 // Dashboard API
@@ -107,6 +108,18 @@ export const invoicesAPI = {
   update: (id: string, data: any) => api.put(`/api/invoices/${id}`, data),
   delete: (id: string) => api.delete(`/api/invoices/${id}`),
   convert: (id: string) => api.post(`/api/invoices/${id}/convert`),
+  downloadPdf: (id: string) => `${API_URL}/api/invoices/${id}/pdf`,
+  downloadXml: (id: string) => `${API_URL}/api/invoices/${id}/xml`,
+};
+
+// Suppliers API
+export const suppliersAPI = {
+  list: (params?: { search?: string; skip?: number; limit?: number }) =>
+    api.get('/api/suppliers/', { params }),
+  get: (id: string) => api.get(`/api/suppliers/${id}`),
+  create: (data: any) => api.post('/api/suppliers/', data),
+  update: (id: string, data: any) => api.put(`/api/suppliers/${id}`, data),
+  delete: (id: string) => api.delete(`/api/suppliers/${id}`),
 };
 
 export default api;

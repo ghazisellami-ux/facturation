@@ -35,6 +35,7 @@ class InvoiceItemResponse(BaseModel):
 
 class InvoiceCreate(BaseModel):
     client_id: Optional[str] = None
+    supplier_id: Optional[str] = None
     invoice_type: str = "facture"
     date: Optional[datetime.date] = None
     due_date: Optional[datetime.date] = None
@@ -63,6 +64,7 @@ class InvoiceResponse(BaseModel):
     invoice_type: str
     status: str
     client_id: Optional[str] = None
+    supplier_id: Optional[str] = None
     client_name: Optional[str] = None
     date: datetime.date
     due_date: Optional[datetime.date] = None

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { invoicesAPI, clientsAPI, productsAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiFileText, FiEye } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiFileText, FiEye, FiDownload, FiCode } from 'react-icons/fi';
 import Link from 'next/link';
 
 const statusMap: Record<string, { label: string; className: string }> = {
@@ -92,6 +92,13 @@ export default function FacturesPage() {
     try { await invoicesAPI.update(id, { status }); toast.success('Statut mis à jour'); load(); } catch { toast.error('Erreur'); }
   };
 
+  const handleDownload = (id: string, format: 'pdf' | 'xml') => {
+    const token = require('js-cookie').get('access_token');
+    const url = format === 'pdf' ? invoicesAPI.downloadPdf(id) : invoicesAPI.downloadXml(id);
+    // Open in new tab with auth token
+    window.open(`${url}?token=${token}`, '_blank');
+  };
+
   return (
     <>
       <div className="toolbar">
@@ -122,7 +129,11 @@ export default function FacturesPage() {
                       <option value="brouillon">Brouillon</option><option value="envoyee">Envoyée</option><option value="payee">Payée</option><option value="partiellement_payee">Partielle</option><option value="en_retard">En retard</option><option value="annulee">Annulée</option>
                     </select>
                   </td>
-                  <td><button className="btn btn-icon" onClick={() => handleDelete(inv.id)} style={{ color: 'var(--danger)' }}><FiTrash2 /></button></td>
+                  <td>
+                    <button className="btn btn-icon" onClick={() => handleDownload(inv.id, 'pdf')} title="Télécharger PDF" style={{ color: 'var(--primary)' }}><FiDownload /></button>
+                    <button className="btn btn-icon" onClick={() => handleDownload(inv.id, 'xml')} title="Télécharger XML" style={{ color: '#f59e0b' }}><FiCode /></button>
+                    <button className="btn btn-icon" onClick={() => handleDelete(inv.id)} style={{ color: 'var(--danger)' }}><FiTrash2 /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>

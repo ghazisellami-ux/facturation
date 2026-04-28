@@ -4,7 +4,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.company import Company
 from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
-from app.schemas.company import CompanyCreate, CompanyResponse
+from app.schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse
 from app.utils.auth import (
     hash_password, verify_password,
     create_access_token, create_refresh_token,
@@ -90,3 +90,24 @@ def get_my_company(
     if not company:
         raise HTTPException(status_code=404, detail="Aucune entreprise trouvée")
     return company
+
+
+@router.put("/company", response_model=CompanyResponse)
+def update_my_company(
+    data: CompanyUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mettre à jour les informations de l'entreprise."""
+    company = db.query(Company).filter(Company.owner_id == current_user.id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Aucune entreprise trouvée")
+
+    update_fields = data.model_dump(exclude_unset=True)
+    for key, value in update_fields.items():
+        setattr(company, key, value)
+
+    db.commit()
+    db.refresh(company)
+    return company
+

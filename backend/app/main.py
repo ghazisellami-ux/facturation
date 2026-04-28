@@ -2,7 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import engine, Base
-from app.routers import auth, clients, products, invoices, dashboard
+from app.routers import auth, clients, products, invoices, dashboard, suppliers
+
+# Import all models so Base.metadata.create_all creates all tables
+from app.models import supplier  # noqa: F401
 
 settings = get_settings()
 
@@ -32,6 +35,7 @@ app.include_router(dashboard.router)
 app.include_router(clients.router)
 app.include_router(products.router)
 app.include_router(invoices.router)
+app.include_router(suppliers.router)
 
 
 @app.get("/api/health")

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { FiGrid, FiFileText, FiUsers, FiPackage, FiShoppingCart, FiSettings, FiLogOut, FiFile } from 'react-icons/fi';
+import { FiGrid, FiFileText, FiUsers, FiPackage, FiShoppingCart, FiSettings, FiLogOut, FiFile, FiTruck } from 'react-icons/fi';
 
 const navItems = [
   { section: 'Principal', items: [
@@ -12,6 +12,10 @@ const navItems = [
   { section: 'Ventes', items: [
     { href: '/dashboard/factures', icon: FiFileText, label: 'Factures' },
     { href: '/dashboard/devis', icon: FiFile, label: 'Devis' },
+  ]},
+  { section: 'Achats', items: [
+    { href: '/dashboard/achats', icon: FiShoppingCart, label: "Factures d'achat" },
+    { href: '/dashboard/fournisseurs', icon: FiTruck, label: 'Fournisseurs' },
   ]},
   { section: 'Gestion', items: [
     { href: '/dashboard/clients', icon: FiUsers, label: 'Clients' },

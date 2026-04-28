@@ -36,3 +36,4 @@ class Company(Base):
     clients = relationship("Client", back_populates="company", cascade="all, delete-orphan")
     products = relationship("Product", back_populates="company", cascade="all, delete-orphan")
     invoices = relationship("Invoice", back_populates="company", cascade="all, delete-orphan")
+    suppliers = relationship("Supplier", back_populates="company", cascade="all, delete-orphan")
