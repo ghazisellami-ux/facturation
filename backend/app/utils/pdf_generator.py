@@ -74,9 +74,6 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
         f"<b>N° {invoice.reference}</b>",
         f"Date : {invoice.date.strftime('%d/%m/%Y') if invoice.date else '—'}",
     ]
-    if invoice.due_date:
-        ref_lines.append(f"Échéance : {invoice.due_date.strftime('%d/%m/%Y')}")
-    ref_lines.append(f"Statut : {invoice.status.upper()}")
     ref_text = Paragraph("<br/>".join(ref_lines), ParagraphStyle('RefRight', parent=style_body, alignment=TA_RIGHT))
 
     header_table = Table([[company_text, ref_text]], colWidths=[90*mm, 80*mm])
@@ -92,7 +89,7 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
 
     # ── CLIENT INFO ──
     if client:
-        elements.append(Paragraph("FACTURER À", style_section))
+        elements.append(Paragraph("Client :", style_section))
         client_lines = [f"<b>{client.name}</b>"]
         if client.tax_id:
             client_lines.append(f"MF : {client.tax_id}")
@@ -207,16 +204,23 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
         elements.append(Paragraph("CONDITIONS", style_section))
         elements.append(Paragraph(invoice.conditions, style_body))
 
-    # ── FOOTER ──
-    elements.append(Spacer(1, 10*mm))
-    elements.append(HRFlowable(width="100%", thickness=0.3, color=colors.HexColor('#dadce0')))
-    elements.append(Spacer(1, 2*mm))
+    # ── FOOTER (rendered at absolute bottom of every page) ──
     footer_text = f"Généré par SIC Facture — {company.name}"
     if company.tax_id:
         footer_text += f" — MF : {company.tax_id}"
-    elements.append(Paragraph(footer_text, ParagraphStyle('Footer', parent=style_small, alignment=TA_CENTER)))
 
-    doc.build(elements)
+    def add_footer(canvas_obj, doc_obj):
+        canvas_obj.saveState()
+        canvas_obj.setFont('Helvetica', 7)
+        canvas_obj.setFillColor(colors.HexColor('#80868b'))
+        canvas_obj.drawCentredString(A4[0] / 2, 12*mm, footer_text)
+        # Thin line above footer
+        canvas_obj.setStrokeColor(colors.HexColor('#dadce0'))
+        canvas_obj.setLineWidth(0.3)
+        canvas_obj.line(20*mm, 15*mm, A4[0] - 20*mm, 15*mm)
+        canvas_obj.restoreState()
+
+    doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
     pdf_bytes = buffer.getvalue()
     buffer.close()
     return pdf_bytes
