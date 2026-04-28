@@ -26,8 +26,8 @@ export async function GET(
     }
 
     const data = await response.arrayBuffer();
-    const contentType = format === 'pdf' ? 'application/pdf' : 'application/octet-stream';
-    const disposition = format === 'pdf' ? 'inline' : 'attachment';
+    const contentType = format === 'pdf' ? 'application/pdf' : 'application/xml';
+    const disposition = 'attachment';
 
     return new NextResponse(data, {
       status: 200,

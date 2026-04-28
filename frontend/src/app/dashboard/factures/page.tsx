@@ -98,7 +98,18 @@ export default function FacturesPage() {
   const handleDownload = (id: string, format: 'pdf' | 'xml') => {
     const token = Cookies.get('access_token');
     if (!token) { toast.error('Veuillez vous reconnecter'); return; }
-    window.open(`/api/download/${id}/${format}?token=${token}`, '_blank');
+    const url = `/api/download/${id}/${format}?token=${token}`;
+    if (format === 'pdf') {
+      window.open(url, '_blank');
+    } else {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'facture.xml';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   return (
