@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { productsAPI } from '@/lib/api';
+import { productsAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiPackage } from 'react-icons/fi';
 
@@ -25,7 +25,7 @@ export default function ProduitsPage() {
       if (editing) { await productsAPI.update(editing.id, form); toast.success('Produit modifié'); }
       else { await productsAPI.create(form); toast.success('Produit créé'); }
       setShowModal(false); load();
-    } catch (err: any) { toast.error(err.response?.data?.detail || 'Erreur'); }
+    } catch (err: any) { toast.error(getErrorMessage(err)); }
   };
 
   const handleDelete = async (id: string) => {

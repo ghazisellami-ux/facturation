@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
+import { getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
@@ -20,7 +21,7 @@ export default function RegisterPage() {
       toast.success('Compte créé avec succès !');
       router.push('/dashboard');
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de l\'inscription');
+      toast.error(getErrorMessage(err, 'Erreur lors de l\'inscription'));
     } finally { setLoading(false); }
   };
 

@@ -1,6 +1,18 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
+// Helper to safely extract error message from API responses
+// FastAPI returns {detail: string} OR {detail: [{type, loc, msg, input}]}
+export function getErrorMessage(err: any, fallback = 'Une erreur est survenue'): string {
+  const detail = err?.response?.data?.detail;
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
+  }
+  return fallback;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const api = axios.create({

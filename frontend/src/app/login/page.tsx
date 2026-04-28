@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
+import { getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -20,7 +21,7 @@ export default function LoginPage() {
       toast.success('Connexion réussie !');
       router.push('/dashboard');
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Erreur de connexion');
+      toast.error(getErrorMessage(err, 'Erreur de connexion'));
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { invoicesAPI, clientsAPI, productsAPI } from '@/lib/api';
+import { invoicesAPI, clientsAPI, productsAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiFileText, FiEye } from 'react-icons/fi';
 import Link from 'next/link';
@@ -69,7 +69,7 @@ export default function FacturesPage() {
       await invoicesAPI.create({ ...form, invoice_type: 'facture' });
       toast.success('Facture créée !');
       setShowModal(false); load();
-    } catch (err: any) { toast.error(err.response?.data?.detail || 'Erreur'); }
+    } catch (err: any) { toast.error(getErrorMessage(err, 'Erreur lors de la création')); }
   };
 
   const handleDelete = async (id: string) => {

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { clientsAPI } from '@/lib/api';
+import { clientsAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiUsers } from 'react-icons/fi';
 
@@ -26,7 +26,7 @@ export default function ClientsPage() {
       if (editing) { await clientsAPI.update(editing.id, form); toast.success('Client modifié'); }
       else { await clientsAPI.create(form); toast.success('Client créé'); }
       setShowModal(false); load();
-    } catch (err: any) { toast.error(err.response?.data?.detail || 'Erreur'); }
+    } catch (err: any) { toast.error(getErrorMessage(err)); }
   };
 
   const handleDelete = async (id: string) => {
