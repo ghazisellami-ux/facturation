@@ -5,6 +5,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: sicfacture-db
+    restart: always
     environment:
       POSTGRES_USER: sicfacture
       POSTGRES_PASSWORD: sicfacture2024
@@ -27,6 +28,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: sicfacture-backend
+    restart: always
     environment:
       - DATABASE_URL=postgresql://sicfacture:sicfacture2024@db:5432/sicfacture
       - SECRET_KEY=sic-facture-secret-key-change-in-production-2024
@@ -47,6 +49,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: sicfacture-frontend
+    restart: always
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8001
       - BACKEND_INTERNAL_URL=http://backend:8000
