@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { withholdingsAPI, clientsAPI, suppliersAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { FiPlus, FiSearch, FiTrash2, FiFileText, FiX, FiPercent } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiTrash2, FiFileText, FiX, FiPercent, FiFilter } from 'react-icons/fi';
 
 export default function RetenuesPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -11,6 +11,8 @@ export default function RetenuesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'emise' | 'recue'>('emise');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedClient, setSelectedClient] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
     type: 'emise' as 'emise' | 'recue',
@@ -27,8 +29,10 @@ export default function RetenuesPage() {
 
   const load = () => {
     setLoading(true);
+    const params: any = { type: activeTab, search: search || undefined, year: selectedYear };
+    if (selectedClient) params.client_id = selectedClient;
     Promise.all([
-      withholdingsAPI.list({ type: activeTab, search: search || undefined }),
+      withholdingsAPI.list(params),
       clientsAPI.list(),
       suppliersAPI.list(),
     ]).then(([wh, cli, sup]) => {
@@ -38,7 +42,7 @@ export default function RetenuesPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   };
-  useEffect(() => { load(); }, [activeTab, search]);
+  useEffect(() => { load(); }, [activeTab, search, selectedYear, selectedClient]);
 
   const fmt = (n: number) => new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n);
 
@@ -124,6 +128,18 @@ export default function RetenuesPage() {
             Retenues effectuées par vos clients sur vous
           </span>
         </button>
+      </div>
+
+      <div className="card" style={{ padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <FiFilter style={{ color: 'var(--text-secondary)' }} />
+        <select className="form-input" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} style={{ padding: '5px 10px', fontSize: 13, width: 'auto', minWidth: 90 }}>
+          {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)} style={{ padding: '5px 10px', fontSize: 13, width: 'auto', minWidth: 160 }}>
+          <option value="">Tous les clients</option>
+          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        {(selectedYear !== new Date().getFullYear() || selectedClient) && <button className="btn btn-sm btn-secondary" onClick={() => { setSelectedYear(new Date().getFullYear()); setSelectedClient(''); }} style={{ fontSize: 11, padding: '4px 12px' }}>Réinitialiser</button>}
       </div>
 
       {/* Totaux */}

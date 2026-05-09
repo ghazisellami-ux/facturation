@@ -73,6 +73,8 @@ def list_invoices(
     invoice_type: Optional[str] = Query(None),
     status_filter: Optional[str] = Query(None, alias="status"),
     search: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    client_id: Optional[str] = Query(None),
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
@@ -88,6 +90,10 @@ def list_invoices(
         query = query.filter(Invoice.status == status_filter)
     if search:
         query = query.filter(Invoice.reference.ilike(f"%{search}%"))
+    if year:
+        query = query.filter(extract("year", Invoice.date) == year)
+    if client_id:
+        query = query.filter(Invoice.client_id == client_id)
 
     invoices = query.order_by(Invoice.date.desc()).offset(skip).limit(limit).all()
 

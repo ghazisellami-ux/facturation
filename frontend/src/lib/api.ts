@@ -102,7 +102,7 @@ export const productsAPI = {
 
 // Invoices API
 export const invoicesAPI = {
-  list: (params?: { invoice_type?: string; status?: string; search?: string; skip?: number; limit?: number }) =>
+  list: (params?: { invoice_type?: string; status?: string; search?: string; year?: number; client_id?: string; skip?: number; limit?: number }) =>
     api.get('/api/invoices/', { params }),
   get: (id: string) => api.get(`/api/invoices/${id}`),
   create: (data: any) => api.post('/api/invoices/', data),
@@ -125,7 +125,7 @@ export const suppliersAPI = {
 
 // Withholdings API (Retenue à la source)
 export const withholdingsAPI = {
-  list: (params?: { type?: string; search?: string; skip?: number; limit?: number }) =>
+  list: (params?: { type?: string; search?: string; year?: number; client_id?: string; skip?: number; limit?: number }) =>
     api.get('/api/withholdings/', { params }),
   create: (data: any) => api.post('/api/withholdings/', data),
   update: (id: string, data: any) => api.put(`/api/withholdings/${id}`, data),

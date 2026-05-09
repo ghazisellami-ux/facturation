@@ -13,6 +13,8 @@ from app.models.supplier import Supplier
 from app.utils.auth import get_current_user
 from app.routers.invoices import get_user_company
 
+from sqlalchemy import extract
+
 router = APIRouter(prefix="/api/withholdings", tags=["Withholdings"])
 
 
@@ -48,6 +50,8 @@ class WithholdingUpdate(BaseModel):
 def list_withholdings(
     type: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    client_id: Optional[str] = Query(None),
     skip: int = 0, limit: int = 100,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -62,6 +66,10 @@ def list_withholdings(
             (WithholdingTax.beneficiary_name.ilike(f"%{search}%")) |
             (WithholdingTax.notes.ilike(f"%{search}%"))
         )
+    if year:
+        q = q.filter(extract("year", WithholdingTax.date) == year)
+    if client_id:
+        q = q.filter(WithholdingTax.client_id == client_id)
     items = q.order_by(WithholdingTax.date.desc()).offset(skip).limit(limit).all()
 
     results = []

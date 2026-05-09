@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { invoicesAPI, clientsAPI, productsAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiFileText, FiEye, FiDownload, FiCode } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiFileText, FiEye, FiDownload, FiCode, FiFilter } from 'react-icons/fi';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
 
@@ -23,18 +23,22 @@ export default function FacturesPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedClient, setSelectedClient] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ client_id: '', date: '', due_date: '', notes: '', timbre_fiscal: 1.0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] as InvoiceItem[] });
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); setForm(f => ({ ...f, date: new Date().toISOString().split('T')[0] })); }, []);
 
   const load = () => {
+    const params: any = { invoice_type: 'facture', search: search || undefined, year: selectedYear };
+    if (selectedClient) params.client_id = selectedClient;
     Promise.all([
-      invoicesAPI.list({ invoice_type: 'facture', search: search || undefined }),
+      invoicesAPI.list(params),
       clientsAPI.list(), productsAPI.list()
     ]).then(([inv, cli, pro]) => { setInvoices(inv.data); setClients(cli.data); setProducts(pro.data); setLoading(false); }).catch(() => setLoading(false));
   };
-  useEffect(() => { load(); }, [search]);
+  useEffect(() => { load(); }, [search, selectedYear, selectedClient]);
 
   const fmt = (n: number) => new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n);
 
@@ -108,6 +112,18 @@ export default function FacturesPage() {
         <div className="toolbar-right">
           <button className="btn btn-primary btn-sm" onClick={() => { setForm({ client_id: '', date: new Date().toISOString().split('T')[0], due_date: '', notes: '', timbre_fiscal: 1.0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] }); setShowModal(true); }} style={{ width: 'auto' }}><FiPlus /> Nouvelle facture</button>
         </div>
+      </div>
+
+      <div className="card" style={{ padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <FiFilter style={{ color: 'var(--text-secondary)' }} />
+        <select className="form-input" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} style={{ padding: '5px 10px', fontSize: 13, width: 'auto', minWidth: 90 }}>
+          {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <select className="form-input" value={selectedClient} onChange={e => setSelectedClient(e.target.value)} style={{ padding: '5px 10px', fontSize: 13, width: 'auto', minWidth: 160 }}>
+          <option value="">Tous les clients</option>
+          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        {(selectedYear !== new Date().getFullYear() || selectedClient) && <button className="btn btn-sm btn-secondary" onClick={() => { setSelectedYear(new Date().getFullYear()); setSelectedClient(''); }} style={{ fontSize: 11, padding: '4px 12px' }}>Réinitialiser</button>}
       </div>
 
       <div className="card">

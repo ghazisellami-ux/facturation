@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { invoicesAPI, suppliersAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { FiPlus, FiSearch, FiTrash2, FiX, FiShoppingCart, FiDownload, FiCode } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiTrash2, FiX, FiShoppingCart, FiDownload, FiCode, FiFilter } from 'react-icons/fi';
 import Cookies from 'js-cookie';
 
 export default function AchatsPage() {
@@ -10,6 +10,7 @@ export default function AchatsPage() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
     supplier_id: '', date: '', due_date: '', notes: '',
@@ -18,9 +19,9 @@ export default function AchatsPage() {
   useEffect(() => { setForm(f => ({ ...f, date: new Date().toISOString().split('T')[0] })); }, []);
 
   const load = () => {
-    invoicesAPI.list({ invoice_type: 'facture_achat', search: search || undefined }).then(r => { setInvoices(r.data); setLoading(false); }).catch(() => setLoading(false));
+    invoicesAPI.list({ invoice_type: 'facture_achat', search: search || undefined, year: selectedYear }).then(r => { setInvoices(r.data); setLoading(false); }).catch(() => setLoading(false));
   };
-  useEffect(() => { load(); }, [search]);
+  useEffect(() => { load(); }, [search, selectedYear]);
   useEffect(() => { suppliersAPI.list().then(r => setSuppliers(r.data)).catch(() => {}); }, []);
 
   const fmt = (n: number) => new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3 }).format(n);
@@ -90,6 +91,14 @@ export default function AchatsPage() {
         <div className="toolbar-right">
           <button className="btn btn-primary btn-sm" onClick={openCreate} style={{ width: 'auto' }}><FiPlus /> Nouvelle facture d&apos;achat</button>
         </div>
+      </div>
+
+      <div className="card" style={{ padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <FiFilter style={{ color: 'var(--text-secondary)' }} />
+        <select className="form-input" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} style={{ padding: '5px 10px', fontSize: 13, width: 'auto', minWidth: 90 }}>
+          {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        {selectedYear !== new Date().getFullYear() && <button className="btn btn-sm btn-secondary" onClick={() => setSelectedYear(new Date().getFullYear())} style={{ fontSize: 11, padding: '4px 12px' }}>Réinitialiser</button>}
       </div>
 
       <div className="card">
