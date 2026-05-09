@@ -398,7 +398,7 @@ def download_invoice_pdf(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'inline; filename="{filename}"',
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "Access-Control-Allow-Origin": "*",
         }
     )
