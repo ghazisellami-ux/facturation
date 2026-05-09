@@ -29,12 +29,12 @@ class InvoicePDF(FPDF):
 
         # Nom de l'entreprise
         self.set_font('Helvetica', 'B', 16)
-        self.set_text_color(26, 115, 232)
+        self.set_text_color(0, 0, 0)
         self.cell(0, 7, self.company.name, ln=True)
 
         # Infos entreprise
         self.set_font('Helvetica', '', 8)
-        self.set_text_color(95, 99, 104)
+        self.set_text_color(0, 0, 0)
         x_start = 50 if logo_path else 10
         self.set_x(x_start)
         info_parts = []
@@ -70,7 +70,7 @@ class InvoicePDF(FPDF):
         self.line(10, self.get_y(), 200, self.get_y())
         self.ln(2)
         self.set_font('Helvetica', '', 7)
-        self.set_text_color(128, 134, 139)
+        self.set_text_color(0, 0, 0)
         footer = f"Genere par SIC Facture - {self.company.name}"
         if self.company.tax_id:
             footer += f" - MF : {self.company.tax_id}"
@@ -106,10 +106,10 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
 
     # ── TYPE & REFERENCE ──
     pdf.set_font('Helvetica', 'B', 14)
-    pdf.set_text_color(32, 33, 36)
+    pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 8, f"{type_label}  N. {invoice.reference}", ln=True, align='R')
     pdf.set_font('Helvetica', '', 9)
-    pdf.set_text_color(95, 99, 104)
+    pdf.set_text_color(0, 0, 0)
     date_str = invoice.date.strftime('%d/%m/%Y') if invoice.date else '-'
     pdf.cell(0, 5, f"Date : {date_str}", ln=True, align='R')
     if invoice.due_date:
@@ -119,11 +119,11 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
     # ── CLIENT ──
     if client:
         pdf.set_font('Helvetica', 'B', 10)
-        pdf.set_text_color(32, 33, 36)
+        pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 6, 'Client :', ln=True)
 
         pdf.set_font('Helvetica', 'B', 9)
-        pdf.set_text_color(60, 64, 67)
+        pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 5, client.name, ln=True)
 
         pdf.set_font('Helvetica', '', 8)
@@ -154,7 +154,7 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
     pdf.set_fill_color(241, 243, 244)
     pdf.set_draw_color(218, 220, 224)
     pdf.set_font('Helvetica', 'B', 7)
-    pdf.set_text_color(95, 99, 104)
+    pdf.set_text_color(0, 0, 0)
 
     for i, (w, h) in enumerate(zip(col_widths, headers)):
         align = 'C' if i in (2, 4, 5) else ('R' if i in (3, 6) else 'L')
@@ -165,7 +165,7 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
 
     # Lignes d'articles
     pdf.set_font('Helvetica', '', 8)
-    pdf.set_text_color(60, 64, 67)
+    pdf.set_text_color(0, 0, 0)
 
     fmt = lambda v: f"{v:,.3f}".replace(",", " ")
 
@@ -194,8 +194,8 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
     w_label = 45
     w_value = 35
 
-    def add_total_line(label, value, bold=False, color=(32, 33, 36)):
-        pdf.set_text_color(*color)
+    def add_total_line(label, value, bold=False, color=(0, 0, 0)):
+        pdf.set_text_color(0, 0, 0)
         if bold:
             pdf.set_font('Helvetica', 'B', 10)
         else:
@@ -216,30 +216,30 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
     add_total_line('Timbre fiscal', f"{fmt(invoice.timbre_fiscal)} TND")
 
     # Ligne séparatrice avant net à payer
-    pdf.set_draw_color(26, 115, 232)
+    pdf.set_draw_color(0, 0, 0)
     pdf.set_line_width(0.5)
     pdf.line(x_label, pdf.get_y() + 1, 200, pdf.get_y() + 1)
     pdf.ln(3)
 
-    add_total_line('Net a payer', f"{fmt(invoice.total)} TND", bold=True, color=(26, 115, 232))
+    add_total_line('Net a payer', f"{fmt(invoice.total)} TND", bold=True, color=(0, 0, 0))
 
     # ── NOTES ──
     if invoice.notes:
         pdf.ln(8)
         pdf.set_font('Helvetica', 'B', 10)
-        pdf.set_text_color(32, 33, 36)
+        pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 6, 'NOTES', ln=True)
         pdf.set_font('Helvetica', '', 8)
-        pdf.set_text_color(60, 64, 67)
+        pdf.set_text_color(0, 0, 0)
         pdf.multi_cell(0, 4, invoice.notes)
 
     if invoice.conditions:
         pdf.ln(4)
         pdf.set_font('Helvetica', 'B', 10)
-        pdf.set_text_color(32, 33, 36)
+        pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 6, 'CONDITIONS', ln=True)
         pdf.set_font('Helvetica', '', 8)
-        pdf.set_text_color(60, 64, 67)
+        pdf.set_text_color(0, 0, 0)
         pdf.multi_cell(0, 4, invoice.conditions)
 
     # Output
