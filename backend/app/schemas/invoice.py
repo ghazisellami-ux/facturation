@@ -113,5 +113,7 @@ class DashboardStats(BaseModel):
     total_products: int
     invoices_this_month: int
     revenue_this_month: float
+    tva_a_payer: float = 0.0
+    retenue_a_payer: float = 0.0
     recent_invoices: List[InvoiceListResponse] = []
     monthly_revenue: List[dict] = []

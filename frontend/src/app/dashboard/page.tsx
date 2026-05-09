@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { dashboardAPI } from '@/lib/api';
-import { FiFileText, FiDollarSign, FiUsers, FiPackage, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiFileText, FiDollarSign, FiUsers, FiPackage, FiAlertCircle, FiCheckCircle, FiPercent } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Stats {
   total_invoices: number; total_revenue: number; unpaid_amount: number; paid_amount: number;
   total_clients: number; total_products: number; invoices_this_month: number; revenue_this_month: number;
+  tva_a_payer: number; retenue_a_payer: number;
   recent_invoices: any[]; monthly_revenue: any[];
 }
 
@@ -63,6 +64,29 @@ export default function DashboardPage() {
           <div className="kpi-info">
             <div className="kpi-label">Clients</div>
             <div className="kpi-value">{stats.total_clients}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+        <div className="card" style={{ flex: 1, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: stats.tva_a_payer >= 0 ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: stats.tva_a_payer >= 0 ? '#ef4444' : '#22c55e' }}>
+            <FiPercent />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>TVA à payer</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: stats.tva_a_payer >= 0 ? '#ef4444' : '#22c55e' }}>{fmt(stats.tva_a_payer)} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>TND</span></div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>TVA vente − TVA achat</div>
+          </div>
+        </div>
+        <div className="card" style={{ flex: 1, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: stats.retenue_a_payer >= 0 ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: stats.retenue_a_payer >= 0 ? '#ef4444' : '#22c55e' }}>
+            <FiDollarSign />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>Retenue à payer</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: stats.retenue_a_payer >= 0 ? '#ef4444' : '#22c55e' }}>{fmt(stats.retenue_a_payer)} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>TND</span></div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>Retenue reçue − Retenue émise</div>
           </div>
         </div>
       </div>

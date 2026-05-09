@@ -8,6 +8,7 @@ from app.models.company import Company
 from app.models.client import Client
 from app.models.product import Product
 from app.models.invoice import Invoice, InvoiceType, InvoiceStatus
+from app.models.withholding import WithholdingTax
 from app.schemas.invoice import DashboardStats, InvoiceListResponse
 from app.utils.auth import get_current_user
 
@@ -26,6 +27,7 @@ def get_dashboard_stats(
             total_invoices=0, total_revenue=0, unpaid_amount=0,
             paid_amount=0, total_clients=0, total_products=0,
             invoices_this_month=0, revenue_this_month=0,
+            tva_a_payer=0, retenue_a_payer=0,
         )
 
     now = datetime.utcnow()
@@ -77,6 +79,32 @@ def get_dashboard_stats(
         extract("month", Invoice.date) == current_month,
         extract("year", Invoice.date) == current_year,
     ).scalar()
+
+    # ── TVA à payer = TVA vente - TVA achat ──
+    tva_vente = db.query(func.coalesce(func.sum(Invoice.tva_amount), 0)).filter(
+        Invoice.company_id == company.id,
+        Invoice.invoice_type == InvoiceType.FACTURE.value,
+    ).scalar()
+
+    tva_achat = db.query(func.coalesce(func.sum(Invoice.tva_amount), 0)).filter(
+        Invoice.company_id == company.id,
+        Invoice.invoice_type == InvoiceType.FACTURE_ACHAT.value,
+    ).scalar()
+
+    tva_a_payer = float(tva_vente) - float(tva_achat)
+
+    # ── Retenue à payer = Retenue reçue - Retenue émise ──
+    retenue_recue = db.query(func.coalesce(func.sum(WithholdingTax.tax_amount), 0)).filter(
+        WithholdingTax.company_id == company.id,
+        WithholdingTax.type == "recue",
+    ).scalar()
+
+    retenue_emise = db.query(func.coalesce(func.sum(WithholdingTax.tax_amount), 0)).filter(
+        WithholdingTax.company_id == company.id,
+        WithholdingTax.type == "emise",
+    ).scalar()
+
+    retenue_a_payer = float(retenue_recue) - float(retenue_emise)
 
     # Recent invoices
     recent = factures_query.order_by(Invoice.created_at.desc()).limit(5).all()
@@ -133,6 +161,8 @@ def get_dashboard_stats(
         total_products=total_products,
         invoices_this_month=invoices_this_month,
         revenue_this_month=float(revenue_this_month),
+        tva_a_payer=tva_a_payer,
+        retenue_a_payer=retenue_a_payer,
         recent_invoices=recent_invoices,
         monthly_revenue=monthly_revenue,
     )
