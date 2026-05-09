@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sicfacture-db
+    restart: always
+    environment:
+      POSTGRES_USER: sicfacture
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sicfacture2024prod}
+      POSTGRES_DB: sicfacture
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sicfacture"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sicfacture-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: sicfacture-backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://sicfacture:${DB_PASSWORD:-sicfacture2024prod}@db:5432/sicfacture
+      - SECRET_KEY=${SECRET_KEY:-sic-facture-prod-secret-key-2024-change-me}
+      - FRONTEND_URL=https://facture.sic-tunisia.tn
+    ports:
+      - "127.0.0.1:8002:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sicfacture-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: sicfacture-frontend
+    restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=https://facture.sic-tunisia.tn
+      - BACKEND_INTERNAL_URL=http://backend:8000
+    ports:
+      - "127.0.0.1:3003:3000"
+    depends_on:
+      - backend
+    networks:
+      - sicfacture-network
+
+volumes:
+  postgres_data:
+
+networks:
+  sicfacture-network:
+    driver: bridge

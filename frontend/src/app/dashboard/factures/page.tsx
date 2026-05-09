@@ -97,7 +97,8 @@ export default function FacturesPage() {
 
   const getDownloadUrl = (id: string, format: 'pdf' | 'xml') => {
     const token = Cookies.get('access_token');
-    return token ? `http://localhost:8001/api/invoices/${id}/${format}?token=${token}` : '';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+    return token ? `${apiUrl}/api/invoices/${id}/${format}?token=${token}` : '';
   };
 
   return (
