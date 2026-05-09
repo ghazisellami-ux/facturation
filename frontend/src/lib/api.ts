@@ -76,7 +76,8 @@ export const authAPI = {
 
 // Dashboard API
 export const dashboardAPI = {
-  getStats: () => api.get('/api/dashboard/stats'),
+  getStats: (params?: { year?: number; client_id?: string }) =>
+    api.get('/api/dashboard/stats', { params }),
 };
 
 // Clients API

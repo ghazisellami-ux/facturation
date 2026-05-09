@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from datetime import datetime
@@ -17,10 +18,12 @@ router = APIRouter(prefix="/api/dashboard", tags=["Tableau de bord"])
 
 @router.get("/stats", response_model=DashboardStats)
 def get_dashboard_stats(
+    year: Optional[int] = Query(None),
+    client_id: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtenir les statistiques du tableau de bord."""
+    """Obtenir les statistiques du tableau de bord avec filtres année et client."""
     company = db.query(Company).filter(Company.owner_id == current_user.id).first()
     if not company:
         return DashboardStats(
@@ -32,13 +35,21 @@ def get_dashboard_stats(
 
     now = datetime.utcnow()
     current_month = now.month
-    current_year = now.year
+    filter_year = year or now.year
+
+    # ── Helper: base filter for invoices ──
+    def inv_base(q, inv_type=InvoiceType.FACTURE.value):
+        q = q.filter(
+            Invoice.company_id == company.id,
+            Invoice.invoice_type == inv_type,
+            extract("year", Invoice.date) == filter_year,
+        )
+        if client_id:
+            q = q.filter(Invoice.client_id == client_id)
+        return q
 
     # Base query for factures only
-    factures_query = db.query(Invoice).filter(
-        Invoice.company_id == company.id,
-        Invoice.invoice_type == InvoiceType.FACTURE.value
-    )
+    factures_query = inv_base(db.query(Invoice))
 
     # Total counts
     total_invoices = factures_query.count()
@@ -46,68 +57,71 @@ def get_dashboard_stats(
     total_products = db.query(Product).filter(Product.company_id == company.id).count()
 
     # Revenue
-    total_revenue = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
-        Invoice.company_id == company.id,
-        Invoice.invoice_type == InvoiceType.FACTURE.value
+    total_revenue = inv_base(
+        db.query(func.coalesce(func.sum(Invoice.total), 0))
     ).scalar()
 
-    paid_amount = db.query(func.coalesce(func.sum(Invoice.amount_paid), 0)).filter(
-        Invoice.company_id == company.id,
-        Invoice.invoice_type == InvoiceType.FACTURE.value
+    paid_amount = inv_base(
+        db.query(func.coalesce(func.sum(Invoice.amount_paid), 0))
     ).scalar()
 
-    unpaid_amount = db.query(func.coalesce(func.sum(Invoice.balance_due), 0)).filter(
-        Invoice.company_id == company.id,
-        Invoice.invoice_type == InvoiceType.FACTURE.value,
+    unpaid_q = inv_base(
+        db.query(func.coalesce(func.sum(Invoice.balance_due), 0))
+    ).filter(
         Invoice.status.in_([
             InvoiceStatus.ENVOYEE.value,
             InvoiceStatus.PARTIELLEMENT_PAYEE.value,
             InvoiceStatus.EN_RETARD.value,
             InvoiceStatus.BROUILLON.value,
         ])
-    ).scalar()
+    )
+    unpaid_amount = unpaid_q.scalar()
 
     # This month
     invoices_this_month = factures_query.filter(
         extract("month", Invoice.date) == current_month,
-        extract("year", Invoice.date) == current_year,
     ).count()
 
-    revenue_this_month = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
-        Invoice.company_id == company.id,
-        Invoice.invoice_type == InvoiceType.FACTURE.value,
+    revenue_this_month_q = inv_base(
+        db.query(func.coalesce(func.sum(Invoice.total), 0))
+    ).filter(
         extract("month", Invoice.date) == current_month,
-        extract("year", Invoice.date) == current_year,
-    ).scalar()
+    )
+    revenue_this_month = revenue_this_month_q.scalar()
 
     # ── TVA à payer = TVA vente - TVA achat ──
-    tva_vente = db.query(func.coalesce(func.sum(Invoice.tva_amount), 0)).filter(
-        Invoice.company_id == company.id,
-        Invoice.invoice_type == InvoiceType.FACTURE.value,
+    tva_vente = inv_base(
+        db.query(func.coalesce(func.sum(Invoice.tva_amount), 0)),
+        InvoiceType.FACTURE.value
     ).scalar()
 
-    tva_achat = db.query(func.coalesce(func.sum(Invoice.tva_amount), 0)).filter(
+    tva_achat_q = db.query(func.coalesce(func.sum(Invoice.tva_amount), 0)).filter(
         Invoice.company_id == company.id,
         Invoice.invoice_type == InvoiceType.FACTURE_ACHAT.value,
-    ).scalar()
+        extract("year", Invoice.date) == filter_year,
+    )
+    # For purchase invoices, filter by supplier if client_id won't apply
+    tva_achat = tva_achat_q.scalar()
 
     tva_a_payer = float(tva_vente) - float(tva_achat)
 
     # ── Retenue à payer = Retenue reçue - Retenue émise ──
-    retenue_recue = db.query(func.coalesce(func.sum(WithholdingTax.tax_amount), 0)).filter(
-        WithholdingTax.company_id == company.id,
-        WithholdingTax.type == "recue",
-    ).scalar()
+    def wh_base(wh_type):
+        q = db.query(func.coalesce(func.sum(WithholdingTax.tax_amount), 0)).filter(
+            WithholdingTax.company_id == company.id,
+            WithholdingTax.type == wh_type,
+            extract("year", WithholdingTax.date) == filter_year,
+        )
+        if client_id:
+            q = q.filter(WithholdingTax.client_id == client_id)
+        return q
 
-    retenue_emise = db.query(func.coalesce(func.sum(WithholdingTax.tax_amount), 0)).filter(
-        WithholdingTax.company_id == company.id,
-        WithholdingTax.type == "emise",
-    ).scalar()
-
+    retenue_recue = wh_base("recue").scalar()
+    retenue_emise = wh_base("emise").scalar()
     retenue_a_payer = float(retenue_recue) - float(retenue_emise)
 
-    # Recent invoices
-    recent = factures_query.order_by(Invoice.created_at.desc()).limit(5).all()
+    # Recent invoices (filtered)
+    recent = factures_query.order_by(Invoice.date.desc()).limit(10).all()
     recent_invoices = []
     for inv in recent:
         client = db.query(Client).filter(Client.id == inv.client_id).first() if inv.client_id else None
@@ -126,30 +140,26 @@ def get_dashboard_stats(
             created_at=inv.created_at,
         ))
 
-    # Monthly revenue (last 12 months)
+    # Monthly revenue for the selected year (Jan-Dec)
     monthly_revenue = []
-    for i in range(11, -1, -1):
-        month = current_month - i
-        year = current_year
-        if month <= 0:
-            month += 12
-            year -= 1
-
-        rev = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
+    months_fr = [
+        "Jan", "Fév", "Mar", "Avr", "Mai", "Jun",
+        "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"
+    ]
+    for m in range(1, 13):
+        rev_q = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
             Invoice.company_id == company.id,
             Invoice.invoice_type == InvoiceType.FACTURE.value,
-            extract("month", Invoice.date) == month,
-            extract("year", Invoice.date) == year,
-        ).scalar()
+            extract("month", Invoice.date) == m,
+            extract("year", Invoice.date) == filter_year,
+        )
+        if client_id:
+            rev_q = rev_q.filter(Invoice.client_id == client_id)
 
-        months_fr = [
-            "Jan", "Fév", "Mar", "Avr", "Mai", "Jun",
-            "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"
-        ]
         monthly_revenue.append({
-            "month": months_fr[month - 1],
-            "year": year,
-            "revenue": float(rev),
+            "month": months_fr[m - 1],
+            "year": filter_year,
+            "revenue": float(rev_q.scalar()),
         })
 
     return DashboardStats(
