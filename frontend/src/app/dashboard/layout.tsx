@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import { FiGrid, FiFileText, FiUsers, FiPackage, FiShoppingCart, FiSettings, FiLogOut, FiFile, FiTruck } from 'react-icons/fi';
 
@@ -43,7 +44,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-brand">SIC <span>Facture</span></div>
+          <div className="sidebar-brand">
+            <Image src="/logo-sic.jpg" alt="SIC" width={120} height={60} style={{ filter: 'invert(1)', objectFit: 'contain' }} priority />
+          </div>
         </div>
         <nav className="sidebar-nav">
           {navItems.map((section) => (
