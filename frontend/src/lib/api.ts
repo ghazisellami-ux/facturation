@@ -122,4 +122,13 @@ export const suppliersAPI = {
   delete: (id: string) => api.delete(`/api/suppliers/${id}`),
 };
 
+// Withholdings API (Retenue à la source)
+export const withholdingsAPI = {
+  list: (params?: { type?: string; search?: string; skip?: number; limit?: number }) =>
+    api.get('/api/withholdings/', { params }),
+  create: (data: any) => api.post('/api/withholdings/', data),
+  update: (id: string, data: any) => api.put(`/api/withholdings/${id}`, data),
+  delete: (id: string) => api.delete(`/api/withholdings/${id}`),
+};
+
 export default api;
