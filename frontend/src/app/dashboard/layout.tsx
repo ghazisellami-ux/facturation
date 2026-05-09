@@ -44,8 +44,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-brand" style={{ background: '#fff', borderRadius: 10, padding: '8px 12px', display: 'inline-block' }}>
-            <Image src="/logo-sic.jpg" alt="SIC" width={140} height={70} style={{ objectFit: 'contain', display: 'block' }} priority />
+          <div className="sidebar-brand">
+            <Image src="/logo-sic.jpg" alt="SIC" width={140} height={70} style={{ filter: 'invert(1)', objectFit: 'contain', display: 'block' }} priority />
           </div>
         </div>
         <nav className="sidebar-nav">
