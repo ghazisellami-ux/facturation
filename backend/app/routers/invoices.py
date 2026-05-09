@@ -391,7 +391,7 @@ def download_invoice_pdf(
     supplier_obj = db.query(Supplier).filter(Supplier.id == invoice.supplier_id).first() if invoice.supplier_id else None
     items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.id).order_by(InvoiceItem.sort_order).all()
 
-    pdf_bytes = generate_invoice_pdf(invoice, company, client_obj or supplier_obj, items)
+    pdf_bytes = bytes(generate_invoice_pdf(invoice, company, client_obj or supplier_obj, items))
     filename = f"{invoice.reference}.pdf"
 
     return Response(
