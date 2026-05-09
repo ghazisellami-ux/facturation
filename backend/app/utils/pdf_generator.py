@@ -1,233 +1,253 @@
 """
 Générateur de factures PDF pour SIC Facture.
-Utilise ReportLab pour produire des factures professionnelles conformes à la législation tunisienne.
+Utilise fpdf2 pour produire des factures professionnelles conformes à la législation tunisienne.
 """
 import io
-from datetime import date
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
-from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
+import os
+import tempfile
+import urllib.request
+from fpdf import FPDF
+
+
+class InvoicePDF(FPDF):
+    """PDF personnalisé avec en-tête et pied de page."""
+
+    def __init__(self, company, invoice_type_label):
+        super().__init__()
+        self.company = company
+        self.invoice_type_label = invoice_type_label
+        self.set_auto_page_break(auto=True, margin=25)
+
+    def header(self):
+        # Logo si disponible
+        logo_path = self._get_logo_path()
+        if logo_path:
+            self.image(logo_path, 10, 8, 35)
+            self.set_xy(50, 10)
+        else:
+            self.set_xy(10, 10)
+
+        # Nom de l'entreprise
+        self.set_font('Helvetica', 'B', 16)
+        self.set_text_color(26, 115, 232)
+        self.cell(0, 7, self.company.name, ln=True)
+
+        # Infos entreprise
+        self.set_font('Helvetica', '', 8)
+        self.set_text_color(95, 99, 104)
+        x_start = 50 if logo_path else 10
+        self.set_x(x_start)
+        info_parts = []
+        if self.company.tax_id:
+            info_parts.append(f"MF : {self.company.tax_id}")
+        if self.company.address:
+            info_parts.append(self.company.address)
+        if self.company.city:
+            city = self.company.city
+            if self.company.postal_code:
+                city = f"{self.company.postal_code} {city}"
+            info_parts.append(city)
+        if self.company.phone:
+            info_parts.append(f"Tel : {self.company.phone}")
+        if self.company.email:
+            info_parts.append(self.company.email)
+
+        for part in info_parts:
+            self.cell(0, 4, part, ln=True)
+            self.set_x(x_start)
+
+        self.ln(3)
+        # Ligne séparatrice
+        self.set_draw_color(218, 220, 224)
+        self.set_line_width(0.3)
+        self.line(10, self.get_y(), 200, self.get_y())
+        self.ln(3)
+
+    def footer(self):
+        self.set_y(-20)
+        self.set_draw_color(218, 220, 224)
+        self.set_line_width(0.2)
+        self.line(10, self.get_y(), 200, self.get_y())
+        self.ln(2)
+        self.set_font('Helvetica', '', 7)
+        self.set_text_color(128, 134, 139)
+        footer = f"Genere par SIC Facture - {self.company.name}"
+        if self.company.tax_id:
+            footer += f" - MF : {self.company.tax_id}"
+        self.cell(0, 5, footer, align='C')
+
+    def _get_logo_path(self):
+        """Tente de charger le logo de l'entreprise."""
+        if hasattr(self.company, 'logo_url') and self.company.logo_url:
+            try:
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+                urllib.request.urlretrieve(self.company.logo_url, tmp.name)
+                return tmp.name
+            except Exception:
+                pass
+        # Chercher le logo local
+        logo_local = os.path.join(os.path.dirname(__file__), '..', '..', 'logo-sic.jpg')
+        if os.path.exists(logo_local):
+            return logo_local
+        return None
 
 
 def generate_invoice_pdf(invoice, company, client, items) -> bytes:
-    """Génère un PDF de facture complet avec infos société et client."""
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=A4,
-        leftMargin=20*mm, rightMargin=20*mm,
-        topMargin=15*mm, bottomMargin=20*mm
-    )
+    """Genere un PDF de facture complet avec infos societe et client."""
 
-    styles = getSampleStyleSheet()
-    elements = []
-
-    # Custom styles
-    style_title = ParagraphStyle('Title', parent=styles['Heading1'],
-        fontSize=22, textColor=colors.HexColor('#1a73e8'), spaceAfter=2*mm)
-    style_subtitle = ParagraphStyle('Subtitle', parent=styles['Normal'],
-        fontSize=10, textColor=colors.HexColor('#5f6368'), spaceAfter=1*mm)
-    style_section = ParagraphStyle('Section', parent=styles['Heading2'],
-        fontSize=12, textColor=colors.HexColor('#202124'), spaceBefore=6*mm, spaceAfter=3*mm)
-    style_body = ParagraphStyle('Body', parent=styles['Normal'],
-        fontSize=9, textColor=colors.HexColor('#3c4043'), leading=13)
-    style_small = ParagraphStyle('Small', parent=styles['Normal'],
-        fontSize=8, textColor=colors.HexColor('#80868b'))
-    style_amount = ParagraphStyle('Amount', parent=styles['Normal'],
-        fontSize=9, alignment=TA_RIGHT, textColor=colors.HexColor('#3c4043'))
-    style_total_label = ParagraphStyle('TotalLabel', parent=styles['Normal'],
-        fontSize=10, alignment=TA_RIGHT, textColor=colors.HexColor('#5f6368'))
-    style_total_value = ParagraphStyle('TotalValue', parent=styles['Normal'],
-        fontSize=10, alignment=TA_RIGHT, textColor=colors.HexColor('#202124'),
-        fontName='Helvetica-Bold')
-    style_net = ParagraphStyle('Net', parent=styles['Normal'],
-        fontSize=13, alignment=TA_RIGHT, textColor=colors.HexColor('#1a73e8'),
-        fontName='Helvetica-Bold')
-
-    # ── HEADER: Company info + Invoice ref ──
     type_label = {
         'facture': 'FACTURE', 'devis': 'DEVIS', 'avoir': 'AVOIR',
         'bon_livraison': 'BON DE LIVRAISON', 'bon_commande': 'BON DE COMMANDE',
         'facture_achat': "FACTURE D'ACHAT",
     }.get(invoice.invoice_type, 'FACTURE')
 
-    company_lines = [f"<b>{company.name}</b>"]
-    if company.tax_id:
-        company_lines.append(f"MF : {company.tax_id}")
-    if company.address:
-        company_lines.append(company.address)
-    if company.city:
-        addr = company.city
-        if company.postal_code:
-            addr = f"{company.postal_code} {addr}"
-        company_lines.append(addr)
-    if company.phone:
-        company_lines.append(f"Tél : {company.phone}")
-    if company.email:
-        company_lines.append(company.email)
-    company_text = Paragraph("<br/>".join(company_lines), style_body)
+    pdf = InvoicePDF(company, type_label)
+    pdf.add_page()
 
-    ref_lines = [
-        f"<b>{type_label}</b>",
-        f"<b>N° {invoice.reference}</b>",
-        f"Date : {invoice.date.strftime('%d/%m/%Y') if invoice.date else '—'}",
-    ]
-    ref_text = Paragraph("<br/>".join(ref_lines), ParagraphStyle('RefRight', parent=style_body, alignment=TA_RIGHT))
+    # ── TYPE & REFERENCE ──
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_text_color(32, 33, 36)
+    pdf.cell(0, 8, f"{type_label}  N. {invoice.reference}", ln=True, align='R')
+    pdf.set_font('Helvetica', '', 9)
+    pdf.set_text_color(95, 99, 104)
+    date_str = invoice.date.strftime('%d/%m/%Y') if invoice.date else '-'
+    pdf.cell(0, 5, f"Date : {date_str}", ln=True, align='R')
+    if invoice.due_date:
+        pdf.cell(0, 5, f"Echeance : {invoice.due_date.strftime('%d/%m/%Y')}", ln=True, align='R')
+    pdf.ln(5)
 
-    header_table = Table([[company_text, ref_text]], colWidths=[90*mm, 80*mm])
-    header_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-    ]))
-    elements.append(header_table)
-    elements.append(Spacer(1, 6*mm))
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#dadce0')))
-    elements.append(Spacer(1, 4*mm))
-
-    # ── CLIENT INFO ──
+    # ── CLIENT ──
     if client:
-        elements.append(Paragraph("Client :", style_section))
-        client_lines = [f"<b>{client.name}</b>"]
-        if client.tax_id:
-            client_lines.append(f"MF : {client.tax_id}")
-        if client.address:
-            client_lines.append(client.address)
-        if client.city:
-            client_lines.append(client.city)
-        if client.phone:
-            client_lines.append(f"Tél : {client.phone}")
-        if client.email:
-            client_lines.append(client.email)
-        elements.append(Paragraph("<br/>".join(client_lines), style_body))
-        elements.append(Spacer(1, 5*mm))
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.set_text_color(32, 33, 36)
+        pdf.cell(0, 6, 'Client :', ln=True)
 
-    # ── ITEMS TABLE ──
-    elements.append(Paragraph("DÉTAILS", style_section))
+        pdf.set_font('Helvetica', 'B', 9)
+        pdf.set_text_color(60, 64, 67)
+        pdf.cell(0, 5, client.name, ln=True)
 
-    # Table header
-    table_data = [[
-        Paragraph("<b>#</b>", style_small),
-        Paragraph("<b>DESCRIPTION</b>", style_small),
-        Paragraph("<b>QTÉ</b>", ParagraphStyle('', parent=style_small, alignment=TA_CENTER)),
-        Paragraph("<b>P.U. HT</b>", ParagraphStyle('', parent=style_small, alignment=TA_RIGHT)),
-        Paragraph("<b>REM %</b>", ParagraphStyle('', parent=style_small, alignment=TA_CENTER)),
-        Paragraph("<b>TVA %</b>", ParagraphStyle('', parent=style_small, alignment=TA_CENTER)),
-        Paragraph("<b>TOTAL HT</b>", ParagraphStyle('', parent=style_small, alignment=TA_RIGHT)),
-    ]]
+        pdf.set_font('Helvetica', '', 8)
+        if hasattr(client, 'tax_id') and client.tax_id:
+            pdf.cell(0, 4, f"MF : {client.tax_id}", ln=True)
+        if hasattr(client, 'address') and client.address:
+            pdf.cell(0, 4, client.address, ln=True)
+        if hasattr(client, 'city') and client.city:
+            pdf.cell(0, 4, client.city, ln=True)
+        if hasattr(client, 'phone') and client.phone:
+            pdf.cell(0, 4, f"Tel : {client.phone}", ln=True)
+        if hasattr(client, 'email') and client.email:
+            pdf.cell(0, 4, client.email, ln=True)
+        if hasattr(client, 'contact_name') and client.contact_name:
+            pdf.cell(0, 4, f"Contact : {client.contact_name}", ln=True)
+        pdf.ln(5)
+
+    # ── TABLE DES ARTICLES ──
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.set_text_color(32, 33, 36)
+    pdf.cell(0, 7, 'DETAILS', ln=True)
+    pdf.ln(2)
+
+    # En-tête du tableau
+    col_widths = [10, 70, 18, 25, 18, 18, 31]
+    headers = ['#', 'DESCRIPTION', 'QTE', 'P.U. HT', 'REM %', 'TVA %', 'TOTAL HT']
+
+    pdf.set_fill_color(241, 243, 244)
+    pdf.set_draw_color(218, 220, 224)
+    pdf.set_font('Helvetica', 'B', 7)
+    pdf.set_text_color(95, 99, 104)
+
+    for i, (w, h) in enumerate(zip(col_widths, headers)):
+        align = 'C' if i in (2, 4, 5) else ('R' if i in (3, 6) else 'L')
+        pdf.cell(w, 7, h, border=0, align=align, fill=True)
+    pdf.ln()
+    pdf.set_line_width(0.3)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+
+    # Lignes d'articles
+    pdf.set_font('Helvetica', '', 8)
+    pdf.set_text_color(60, 64, 67)
 
     fmt = lambda v: f"{v:,.3f}".replace(",", " ")
 
-    for i, item in enumerate(items, 1):
-        table_data.append([
-            Paragraph(str(i), style_body),
-            Paragraph(item.description or '', style_body),
-            Paragraph(str(item.quantity), ParagraphStyle('', parent=style_body, alignment=TA_CENTER)),
-            Paragraph(fmt(item.unit_price), style_amount),
-            Paragraph(f"{item.discount_percent}%", ParagraphStyle('', parent=style_body, alignment=TA_CENTER)),
-            Paragraph(f"{item.tva_rate}%", ParagraphStyle('', parent=style_body, alignment=TA_CENTER)),
-            Paragraph(fmt(item.subtotal), style_amount),
-        ])
+    for idx, item in enumerate(items, 1):
+        y_before = pdf.get_y()
 
-    item_table = Table(table_data, colWidths=[8*mm, 62*mm, 15*mm, 25*mm, 15*mm, 15*mm, 30*mm])
-    item_table.setStyle(TableStyle([
-        # Header
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f1f3f4')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#5f6368')),
-        ('FONTSIZE', (0, 0), (-1, 0), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-        ('TOPPADDING', (0, 0), (-1, 0), 6),
-        # Body
-        ('TOPPADDING', (0, 1), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
-        # Grid
-        ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#dadce0')),
-        ('LINEBELOW', (0, 1), (-1, -1), 0.3, colors.HexColor('#e8eaed')),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-    ]))
-    elements.append(item_table)
-    elements.append(Spacer(1, 6*mm))
+        pdf.cell(col_widths[0], 6, str(idx), align='L')
+        pdf.cell(col_widths[1], 6, (item.description or '')[:55], align='L')
+        pdf.cell(col_widths[2], 6, str(item.quantity), align='C')
+        pdf.cell(col_widths[3], 6, fmt(item.unit_price), align='R')
+        pdf.cell(col_widths[4], 6, f"{item.discount_percent}%", align='C')
+        pdf.cell(col_widths[5], 6, f"{item.tva_rate}%", align='C')
+        pdf.cell(col_widths[6], 6, fmt(item.subtotal), align='R')
+        pdf.ln()
 
-    # ── TOTALS ──
-    totals_data = [
-        [Paragraph("Total HT", style_total_label), Paragraph(f"{fmt(invoice.subtotal)} TND", style_total_value)],
-    ]
+        # Ligne de séparation fine
+        pdf.set_draw_color(232, 234, 237)
+        pdf.set_line_width(0.15)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+
+    pdf.ln(5)
+
+    # ── TOTAUX ──
+    x_label = 120
+    x_value = 165
+    w_label = 45
+    w_value = 35
+
+    def add_total_line(label, value, bold=False, color=(32, 33, 36)):
+        pdf.set_text_color(*color)
+        if bold:
+            pdf.set_font('Helvetica', 'B', 10)
+        else:
+            pdf.set_font('Helvetica', '', 9)
+        pdf.set_x(x_label)
+        pdf.cell(w_label, 6, label, align='R')
+        pdf.cell(w_value, 6, value, align='R', ln=True)
+
+    add_total_line('Total HT', f"{fmt(invoice.subtotal)} TND")
+
     if invoice.discount_amount > 0:
-        totals_data.append([
-            Paragraph("Remise", style_total_label),
-            Paragraph(f"-{fmt(invoice.discount_amount)} TND", style_total_value),
-        ])
+        add_total_line('Remise', f"-{fmt(invoice.discount_amount)} TND")
+
     if invoice.fodec_amount > 0:
-        totals_data.append([
-            Paragraph("FODEC", style_total_label),
-            Paragraph(f"{fmt(invoice.fodec_amount)} TND", style_total_value),
-        ])
-    totals_data.append([
-        Paragraph("TVA", style_total_label),
-        Paragraph(f"{fmt(invoice.tva_amount)} TND", style_total_value),
-    ])
-    totals_data.append([
-        Paragraph("Timbre fiscal", style_total_label),
-        Paragraph(f"{fmt(invoice.timbre_fiscal)} TND", style_total_value),
-    ])
-    totals_data.append([
-        Paragraph("<b>Net à payer</b>", ParagraphStyle('', parent=style_total_label, fontName='Helvetica-Bold',
-                                                        textColor=colors.HexColor('#1a73e8'))),
-        Paragraph(f"<b>{fmt(invoice.total)} TND</b>", style_net),
-    ])
+        add_total_line('FODEC', f"{fmt(invoice.fodec_amount)} TND")
 
-    totals_table = Table(totals_data, colWidths=[120*mm, 50*mm])
-    totals_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('LINEABOVE', (0, -1), (-1, -1), 1, colors.HexColor('#1a73e8')),
-        ('TOPPADDING', (0, -1), (-1, -1), 6),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-    ]))
-    elements.append(totals_table)
+    add_total_line('TVA', f"{fmt(invoice.tva_amount)} TND")
+    add_total_line('Timbre fiscal', f"{fmt(invoice.timbre_fiscal)} TND")
 
-    # ── NOTES / CONDITIONS ──
+    # Ligne séparatrice avant net à payer
+    pdf.set_draw_color(26, 115, 232)
+    pdf.set_line_width(0.5)
+    pdf.line(x_label, pdf.get_y() + 1, 200, pdf.get_y() + 1)
+    pdf.ln(3)
+
+    add_total_line('Net a payer', f"{fmt(invoice.total)} TND", bold=True, color=(26, 115, 232))
+
+    # ── NOTES ──
     if invoice.notes:
-        elements.append(Spacer(1, 8*mm))
-        elements.append(Paragraph("NOTES", style_section))
-        elements.append(Paragraph(invoice.notes, style_body))
+        pdf.ln(8)
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.set_text_color(32, 33, 36)
+        pdf.cell(0, 6, 'NOTES', ln=True)
+        pdf.set_font('Helvetica', '', 8)
+        pdf.set_text_color(60, 64, 67)
+        pdf.multi_cell(0, 4, invoice.notes)
 
     if invoice.conditions:
-        elements.append(Spacer(1, 4*mm))
-        elements.append(Paragraph("CONDITIONS", style_section))
-        elements.append(Paragraph(invoice.conditions, style_body))
+        pdf.ln(4)
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.set_text_color(32, 33, 36)
+        pdf.cell(0, 6, 'CONDITIONS', ln=True)
+        pdf.set_font('Helvetica', '', 8)
+        pdf.set_text_color(60, 64, 67)
+        pdf.multi_cell(0, 4, invoice.conditions)
 
-    # ── FOOTER (rendered at absolute bottom of every page) ──
-    footer_text = f"Généré par SIC Facture — {company.name}"
-    if company.tax_id:
-        footer_text += f" — MF : {company.tax_id}"
-
-    def add_footer(canvas_obj, doc_obj):
-        canvas_obj.saveState()
-        canvas_obj.setFont('Helvetica', 7)
-        canvas_obj.setFillColor(colors.HexColor('#80868b'))
-        canvas_obj.drawCentredString(A4[0] / 2, 12*mm, footer_text)
-        # Thin line above footer
-        canvas_obj.setStrokeColor(colors.HexColor('#dadce0'))
-        canvas_obj.setLineWidth(0.3)
-        canvas_obj.line(20*mm, 15*mm, A4[0] - 20*mm, 15*mm)
-        canvas_obj.restoreState()
-
-    doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
-    pdf_bytes = buffer.getvalue()
-    buffer.close()
-    return pdf_bytes
+    # Output
+    return pdf.output()
 
 
 def generate_invoice_xml(invoice, company, client, items) -> str:
-    """Génère un XML de facture (format e-facture simplifié)."""
+    """Genere un XML de facture (format e-facture simplifie)."""
     import xml.etree.ElementTree as ET
     from xml.dom.minidom import parseString
 
@@ -290,6 +310,5 @@ def generate_invoice_xml(invoice, company, client, items) -> str:
 
     xml_str = ET.tostring(root, encoding='unicode', xml_declaration=False)
     pretty = parseString(f'<?xml version="1.0" encoding="UTF-8"?>{xml_str}').toprettyxml(indent="  ")
-    # Remove extra xml declaration from toprettyxml
     lines = pretty.split('\n')
     return '\n'.join(lines)
