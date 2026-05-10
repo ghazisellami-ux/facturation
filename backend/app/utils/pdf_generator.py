@@ -73,12 +73,24 @@ class InvoicePDF(FPDF):
         self.line(10, self.get_y(), 200, self.get_y())
         self.ln(2)
         self.set_font('Helvetica', '', 7)
-        self.set_text_color(0, 0, 0)
-        footer = f"Genere par SIC Facture - {self.company.name}"
+        self.set_text_color(100, 100, 100)
+        parts = [self.company.name]
         if self.company.tax_id:
-            footer += f" - MF : {self.company.tax_id}"
+            parts.append(f"MF : {self.company.tax_id}")
         if hasattr(self.company, 'rne') and self.company.rne:
-            footer += f" - RNE : {self.company.rne}"
+            parts.append(f"RNE : {self.company.rne}")
+        if self.company.address:
+            parts.append(self.company.address)
+        if self.company.city:
+            addr = self.company.city
+            if self.company.postal_code:
+                addr = f"{self.company.postal_code} {addr}"
+            parts.append(addr)
+        if self.company.phone:
+            parts.append(f"Tel : {self.company.phone}")
+        if self.company.email:
+            parts.append(self.company.email)
+        footer = " | ".join(parts)
         self.cell(0, 5, footer, align='C')
 
     def _get_logo_path(self):
@@ -117,8 +129,6 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
     pdf.set_text_color(0, 0, 0)
     date_str = invoice.date.strftime('%d/%m/%Y') if invoice.date else '-'
     pdf.cell(0, 5, f"Date : {date_str}", ln=True, align='R')
-    if invoice.due_date:
-        pdf.cell(0, 5, f"Echeance : {invoice.due_date.strftime('%d/%m/%Y')}", ln=True, align='R')
     pdf.ln(5)
 
     # ── CLIENT ──
@@ -239,7 +249,7 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
     pdf.set_font('Helvetica', 'B', 9)
     pdf.set_text_color(0, 0, 0)
     words = amount_to_words(invoice.total)
-    pdf.multi_cell(0, 5, f"Arretee la presente facture a la somme de : {words}.")
+    pdf.multi_cell(0, 5, f"Arr\u00eat\u00e9e la pr\u00e9sente facture \u00e0 la somme de : {words}.")
 
     # ── NOTES ──
     if invoice.notes:
