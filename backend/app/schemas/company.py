@@ -6,6 +6,7 @@ from datetime import datetime
 class CompanyCreate(BaseModel):
     name: str
     tax_id: Optional[str] = None
+    rne: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
@@ -20,6 +21,7 @@ class CompanyCreate(BaseModel):
 class CompanyUpdate(BaseModel):
     name: Optional[str] = None
     tax_id: Optional[str] = None
+    rne: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
@@ -37,6 +39,7 @@ class CompanyResponse(BaseModel):
     id: str
     name: str
     tax_id: Optional[str] = None
+    rne: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
