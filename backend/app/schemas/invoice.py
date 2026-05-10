@@ -107,7 +107,7 @@ class InvoiceListResponse(BaseModel):
 class DashboardStats(BaseModel):
     total_invoices: int
     total_revenue: float
-    unpaid_amount: float
+    total_charges: float
     paid_amount: float
     total_clients: int
     total_products: int

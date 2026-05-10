@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { dashboardAPI, clientsAPI } from '@/lib/api';
-import { FiFileText, FiDollarSign, FiUsers, FiAlertCircle, FiPercent, FiFilter } from 'react-icons/fi';
+import { FiFileText, FiDollarSign, FiUsers, FiShoppingCart, FiPercent, FiFilter } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Stats {
-  total_invoices: number; total_revenue: number; unpaid_amount: number; paid_amount: number;
+  total_invoices: number; total_revenue: number; total_charges: number; paid_amount: number;
   total_clients: number; total_products: number; invoices_this_month: number; revenue_this_month: number;
   tva_a_payer: number; retenue_a_payer: number;
   recent_invoices: any[]; monthly_revenue: any[];
@@ -113,10 +113,11 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="kpi-card orange">
-              <div className="kpi-icon orange"><FiAlertCircle /></div>
+              <div className="kpi-icon orange"><FiShoppingCart /></div>
               <div className="kpi-info">
-                <div className="kpi-label">Impayé</div>
-                <div className="kpi-value text-amount">{fmt(stats.unpaid_amount)}</div>
+                <div className="kpi-label">Charges</div>
+                <div className="kpi-value text-amount">{fmt(stats.total_charges)}</div>
+                <div className="kpi-change" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>Total factures d&apos;achat</div>
               </div>
             </div>
             <div className="kpi-card red">

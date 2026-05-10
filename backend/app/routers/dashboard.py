@@ -27,7 +27,7 @@ def get_dashboard_stats(
     company = db.query(Company).filter(Company.owner_id == current_user.id).first()
     if not company:
         return DashboardStats(
-            total_invoices=0, total_revenue=0, unpaid_amount=0,
+            total_invoices=0, total_revenue=0, total_charges=0,
             paid_amount=0, total_clients=0, total_products=0,
             invoices_this_month=0, revenue_this_month=0,
             tva_a_payer=0, retenue_a_payer=0,
@@ -65,17 +65,12 @@ def get_dashboard_stats(
         db.query(func.coalesce(func.sum(Invoice.amount_paid), 0))
     ).scalar()
 
-    unpaid_q = inv_base(
-        db.query(func.coalesce(func.sum(Invoice.balance_due), 0))
-    ).filter(
-        Invoice.status.in_([
-            InvoiceStatus.ENVOYEE.value,
-            InvoiceStatus.PARTIELLEMENT_PAYEE.value,
-            InvoiceStatus.EN_RETARD.value,
-            InvoiceStatus.BROUILLON.value,
-        ])
-    )
-    unpaid_amount = unpaid_q.scalar()
+    # Total charges (factures d'achat)
+    total_charges = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
+        Invoice.company_id == company.id,
+        Invoice.invoice_type == InvoiceType.FACTURE_ACHAT.value,
+        extract("year", Invoice.date) == filter_year,
+    ).scalar()
 
     # This month
     invoices_this_month = factures_query.filter(
@@ -165,7 +160,7 @@ def get_dashboard_stats(
     return DashboardStats(
         total_invoices=total_invoices,
         total_revenue=float(total_revenue),
-        unpaid_amount=float(unpaid_amount),
+        total_charges=float(total_charges),
         paid_amount=float(paid_amount),
         total_clients=total_clients,
         total_products=total_products,
