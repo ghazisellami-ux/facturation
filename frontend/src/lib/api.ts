@@ -132,4 +132,14 @@ export const withholdingsAPI = {
   delete: (id: string) => api.delete(`/api/withholdings/${id}`),
 };
 
+// Users API (admin)
+export const usersAPI = {
+  list: (params?: { search?: string }) =>
+    api.get('/api/users/', { params }),
+  create: (data: any) => api.post('/api/users/', data),
+  update: (id: string, data: any) => api.put(`/api/users/${id}`, data),
+  delete: (id: string) => api.delete(`/api/users/${id}`),
+  resetPassword: (id: string, password: string) => api.post(`/api/users/${id}/reset-password`, { password }),
+};
+
 export default api;

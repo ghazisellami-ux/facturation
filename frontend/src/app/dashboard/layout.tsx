@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
-import { FiGrid, FiFileText, FiUsers, FiPackage, FiShoppingCart, FiSettings, FiLogOut, FiFile, FiTruck, FiPercent } from 'react-icons/fi';
+import { FiGrid, FiFileText, FiUsers, FiShoppingCart, FiSettings, FiLogOut, FiFile, FiTruck, FiPercent, FiUserPlus } from 'react-icons/fi';
 
 const navItems = [
   { section: 'Principal', items: [
@@ -20,8 +20,8 @@ const navItems = [
   ]},
   { section: 'Gestion', items: [
     { href: '/dashboard/clients', icon: FiUsers, label: 'Clients' },
-    { href: '/dashboard/produits', icon: FiPackage, label: 'Produits' },
     { href: '/dashboard/retenues', icon: FiPercent, label: 'Retenue à la source' },
+    { href: '/dashboard/utilisateurs', icon: FiUserPlus, label: 'Utilisateurs' },
   ]},
   { section: 'Paramètres', items: [
     { href: '/dashboard/parametres', icon: FiSettings, label: 'Paramètres' },
