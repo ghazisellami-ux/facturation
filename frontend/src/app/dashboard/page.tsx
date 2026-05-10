@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'mensuel' | 'annuel'>('mensuel');
+  const [viewMode, setViewMode] = useState<'mensuel' | 'annuel'>('annuel');
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedClient, setSelectedClient] = useState('');
@@ -56,7 +56,7 @@ export default function DashboardPage() {
     ? `${monthNames[selectedMonth - 1]} ${selectedYear}`
     : `${selectedYear}`;
 
-  const isDefault = selectedYear === currentYear && selectedMonth === currentMonth && !selectedClient && viewMode === 'mensuel';
+  const isDefault = selectedYear === currentYear && !selectedClient && viewMode === 'annuel';
 
   return (
     <>
@@ -137,7 +137,7 @@ export default function DashboardPage() {
         {!isDefault && (
           <button
             className="btn btn-sm btn-secondary"
-            onClick={() => { setViewMode('mensuel'); setSelectedYear(currentYear); setSelectedMonth(currentMonth); setSelectedClient(''); }}
+            onClick={() => { setViewMode('annuel'); setSelectedYear(currentYear); setSelectedMonth(currentMonth); setSelectedClient(''); }}
             style={{ fontSize: 12, padding: '5px 14px' }}
           >
             Réinitialiser
