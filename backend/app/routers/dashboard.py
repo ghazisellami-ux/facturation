@@ -19,11 +19,12 @@ router = APIRouter(prefix="/api/dashboard", tags=["Tableau de bord"])
 @router.get("/stats", response_model=DashboardStats)
 def get_dashboard_stats(
     year: Optional[int] = Query(None),
+    month: Optional[int] = Query(None),
     client_id: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtenir les statistiques du tableau de bord avec filtres année et client."""
+    """Obtenir les statistiques du tableau de bord avec filtres année, mois et client."""
     company = db.query(Company).filter(Company.owner_id == current_user.id).first()
     if not company:
         return DashboardStats(
@@ -36,6 +37,7 @@ def get_dashboard_stats(
     now = datetime.utcnow()
     current_month = now.month
     filter_year = year or now.year
+    filter_month = month  # None = annuel (pas de filtre mois)
 
     # ── Helper: base filter for invoices ──
     def inv_base(q, inv_type=InvoiceType.FACTURE.value):
@@ -44,8 +46,21 @@ def get_dashboard_stats(
             Invoice.invoice_type == inv_type,
             extract("year", Invoice.date) == filter_year,
         )
+        if filter_month:
+            q = q.filter(extract("month", Invoice.date) == filter_month)
         if client_id:
             q = q.filter(Invoice.client_id == client_id)
+        return q
+
+    # ── Helper: base filter for purchase invoices ──
+    def achat_base(q):
+        q = q.filter(
+            Invoice.company_id == company.id,
+            Invoice.invoice_type == InvoiceType.FACTURE_ACHAT.value,
+            extract("year", Invoice.date) == filter_year,
+        )
+        if filter_month:
+            q = q.filter(extract("month", Invoice.date) == filter_month)
         return q
 
     # Base query for factures only
@@ -66,23 +81,20 @@ def get_dashboard_stats(
     ).scalar()
 
     # Total charges (factures d'achat)
-    total_charges = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
-        Invoice.company_id == company.id,
-        Invoice.invoice_type == InvoiceType.FACTURE_ACHAT.value,
-        extract("year", Invoice.date) == filter_year,
+    total_charges = achat_base(
+        db.query(func.coalesce(func.sum(Invoice.total), 0))
     ).scalar()
 
     # This month
-    invoices_this_month = factures_query.filter(
+    invoices_this_month = inv_base(db.query(Invoice)).filter(
         extract("month", Invoice.date) == current_month,
-    ).count()
+    ).count() if not filter_month else total_invoices
 
-    revenue_this_month_q = inv_base(
+    revenue_this_month = inv_base(
         db.query(func.coalesce(func.sum(Invoice.total), 0))
     ).filter(
         extract("month", Invoice.date) == current_month,
-    )
-    revenue_this_month = revenue_this_month_q.scalar()
+    ).scalar() if not filter_month else float(total_revenue)
 
     # ── TVA à payer = TVA vente - TVA achat ──
     tva_vente = inv_base(
@@ -90,13 +102,9 @@ def get_dashboard_stats(
         InvoiceType.FACTURE.value
     ).scalar()
 
-    tva_achat_q = db.query(func.coalesce(func.sum(Invoice.tva_amount), 0)).filter(
-        Invoice.company_id == company.id,
-        Invoice.invoice_type == InvoiceType.FACTURE_ACHAT.value,
-        extract("year", Invoice.date) == filter_year,
-    )
-    # For purchase invoices, filter by supplier if client_id won't apply
-    tva_achat = tva_achat_q.scalar()
+    tva_achat = achat_base(
+        db.query(func.coalesce(func.sum(Invoice.tva_amount), 0))
+    ).scalar()
 
     tva_a_payer = float(tva_vente) - float(tva_achat)
 
@@ -107,6 +115,8 @@ def get_dashboard_stats(
             WithholdingTax.type == wh_type,
             extract("year", WithholdingTax.date) == filter_year,
         )
+        if filter_month:
+            q = q.filter(extract("month", WithholdingTax.date) == filter_month)
         if client_id:
             q = q.filter(WithholdingTax.client_id == client_id)
         return q

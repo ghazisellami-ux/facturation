@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { dashboardAPI, clientsAPI } from '@/lib/api';
-import { FiFileText, FiDollarSign, FiUsers, FiShoppingCart, FiPercent, FiFilter } from 'react-icons/fi';
+import { FiFileText, FiDollarSign, FiUsers, FiShoppingCart, FiPercent, FiFilter, FiCalendar } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Stats {
@@ -21,18 +21,23 @@ const statusMap: Record<string, { label: string; className: string }> = {
 };
 
 const currentYear = new Date().getFullYear();
+const currentMonth = new Date().getMonth() + 1;
 const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'mensuel' | 'annuel'>('mensuel');
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedClient, setSelectedClient] = useState('');
 
   const loadStats = () => {
     setLoading(true);
     const params: any = { year: selectedYear };
+    if (viewMode === 'mensuel') params.month = selectedMonth;
     if (selectedClient) params.client_id = selectedClient;
     dashboardAPI.getStats(params)
       .then(res => { setStats(res.data); setLoading(false); })
@@ -43,9 +48,15 @@ export default function DashboardPage() {
     clientsAPI.list().then(res => setClients(res.data)).catch(() => {});
   }, []);
 
-  useEffect(() => { loadStats(); }, [selectedYear, selectedClient]);
+  useEffect(() => { loadStats(); }, [selectedYear, selectedMonth, selectedClient, viewMode]);
 
   const fmt = (n: number) => new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n);
+
+  const periodLabel = viewMode === 'mensuel'
+    ? `${monthNames[selectedMonth - 1]} ${selectedYear}`
+    : `${selectedYear}`;
+
+  const isDefault = selectedYear === currentYear && selectedMonth === currentMonth && !selectedClient && viewMode === 'mensuel';
 
   return (
     <>
@@ -54,6 +65,34 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600 }}>
           <FiFilter /> Filtres
         </div>
+
+        {/* Toggle Mensuel / Annuel */}
+        <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+          <button
+            onClick={() => setViewMode('mensuel')}
+            style={{
+              padding: '6px 16px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+              background: viewMode === 'mensuel' ? 'var(--primary)' : 'transparent',
+              color: viewMode === 'mensuel' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s',
+            }}
+          >
+            <FiCalendar style={{ marginRight: 4, verticalAlign: 'middle' }} /> Mensuel
+          </button>
+          <button
+            onClick={() => setViewMode('annuel')}
+            style={{
+              padding: '6px 16px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+              background: viewMode === 'annuel' ? 'var(--primary)' : 'transparent',
+              color: viewMode === 'annuel' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s',
+            }}
+          >
+            Annuel
+          </button>
+        </div>
+
+        {/* Année */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Année :</label>
           <select
@@ -65,6 +104,23 @@ export default function DashboardPage() {
             {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
+
+        {/* Mois (affiché seulement en mode mensuel) */}
+        {viewMode === 'mensuel' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Mois :</label>
+            <select
+              className="form-input"
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(Number(e.target.value))}
+              style={{ padding: '6px 12px', fontSize: 13, width: 'auto', minWidth: 140 }}
+            >
+              {monthNames.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* Client */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Client :</label>
           <select
@@ -77,10 +133,11 @@ export default function DashboardPage() {
             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
-        {(selectedYear !== currentYear || selectedClient) && (
+
+        {!isDefault && (
           <button
             className="btn btn-sm btn-secondary"
-            onClick={() => { setSelectedYear(currentYear); setSelectedClient(''); }}
+            onClick={() => { setViewMode('mensuel'); setSelectedYear(currentYear); setSelectedMonth(currentMonth); setSelectedClient(''); }}
             style={{ fontSize: 12, padding: '5px 14px' }}
           >
             Réinitialiser
@@ -99,9 +156,9 @@ export default function DashboardPage() {
             <div className="kpi-card blue">
               <div className="kpi-icon blue"><FiFileText /></div>
               <div className="kpi-info">
-                <div className="kpi-label">Total Factures</div>
+                <div className="kpi-label">Factures</div>
                 <div className="kpi-value">{stats.total_invoices}</div>
-                <div className="kpi-change" style={{ color: 'var(--primary)' }}>{stats.invoices_this_month} ce mois</div>
+                <div className="kpi-change" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{periodLabel}</div>
               </div>
             </div>
             <div className="kpi-card green">
@@ -109,7 +166,7 @@ export default function DashboardPage() {
               <div className="kpi-info">
                 <div className="kpi-label">Chiffre d&apos;affaires</div>
                 <div className="kpi-value text-amount">{fmt(stats.total_revenue)}</div>
-                <div className="kpi-change" style={{ color: 'var(--success)' }}>{fmt(stats.revenue_this_month)} ce mois</div>
+                <div className="kpi-change" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{periodLabel}</div>
               </div>
             </div>
             <div className="kpi-card orange">
@@ -117,7 +174,7 @@ export default function DashboardPage() {
               <div className="kpi-info">
                 <div className="kpi-label">Charges</div>
                 <div className="kpi-value text-amount">{fmt(stats.total_charges)}</div>
-                <div className="kpi-change" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>Total factures d&apos;achat</div>
+                <div className="kpi-change" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{periodLabel}</div>
               </div>
             </div>
             <div className="kpi-card red">
@@ -136,7 +193,7 @@ export default function DashboardPage() {
                 <FiPercent />
               </div>
               <div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>TVA à payer ({selectedYear})</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>TVA à payer — {periodLabel}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: stats.tva_a_payer >= 0 ? '#ef4444' : '#22c55e' }}>{fmt(stats.tva_a_payer)} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>TND</span></div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>TVA vente − TVA achat</div>
               </div>
@@ -146,7 +203,7 @@ export default function DashboardPage() {
                 <FiDollarSign />
               </div>
               <div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>Retenue à payer ({selectedYear})</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 2 }}>Retenue à payer — {periodLabel}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: stats.retenue_a_payer >= 0 ? '#ef4444' : '#22c55e' }}>{fmt(stats.retenue_a_payer)} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>TND</span></div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>Retenue reçue − Retenue émise</div>
               </div>
@@ -178,7 +235,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="card">
-              <div className="card-header"><h3 className="card-title">Factures — {selectedYear}</h3></div>
+              <div className="card-header"><h3 className="card-title">Factures — {periodLabel}</h3></div>
               <div className="table-container">
                 <table>
                   <thead><tr><th>Réf.</th><th>Client</th><th>Total</th><th>Statut</th></tr></thead>
