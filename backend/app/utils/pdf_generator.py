@@ -137,19 +137,40 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
         pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 6, 'Client :', ln=True)
 
-        pdf.set_font('Helvetica', 'B', 9)
-        pdf.set_text_color(0, 0, 0)
-        pdf.cell(0, 5, client.name, ln=True)
-
         pdf.set_font('Helvetica', '', 8)
-        if hasattr(client, 'tax_id') and client.tax_id:
-            pdf.cell(0, 4, f"MF : {client.tax_id}", ln=True)
-        if hasattr(client, 'rne') and client.rne:
-            pdf.cell(0, 4, f"RNE : {client.rne}", ln=True)
+        pdf.set_text_color(0, 0, 0)
+
+        # Raison sociale
+        pdf.set_font('Helvetica', 'B', 8)
+        pdf.cell(30, 4, 'Raison sociale :')
+        pdf.set_font('Helvetica', '', 8)
+        pdf.cell(0, 4, client.name, ln=True)
+
+        # Adresse
+        addr_parts = []
         if hasattr(client, 'address') and client.address:
-            pdf.cell(0, 4, client.address, ln=True)
+            addr_parts.append(client.address)
         if hasattr(client, 'city') and client.city:
-            pdf.cell(0, 4, client.city, ln=True)
+            addr_parts.append(client.city)
+        if addr_parts:
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.cell(30, 4, 'Adresse :')
+            pdf.set_font('Helvetica', '', 8)
+            pdf.cell(0, 4, ', '.join(addr_parts), ln=True)
+
+        # MF
+        if hasattr(client, 'tax_id') and client.tax_id:
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.cell(30, 4, 'MF :')
+            pdf.set_font('Helvetica', '', 8)
+            pdf.cell(0, 4, client.tax_id, ln=True)
+
+        # RNE
+        if hasattr(client, 'rne') and client.rne:
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.cell(30, 4, 'RNE :')
+            pdf.set_font('Helvetica', '', 8)
+            pdf.cell(0, 4, client.rne, ln=True)
         if hasattr(client, 'phone') and client.phone:
             pdf.cell(0, 4, f"Tel : {client.phone}", ln=True)
         if hasattr(client, 'email') and client.email:
