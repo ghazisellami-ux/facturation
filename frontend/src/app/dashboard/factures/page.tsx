@@ -173,7 +173,6 @@ export default function FacturesPage() {
                     </select>
                   </div>
                   <div className="form-group"><label>Date</label><input className="form-input" type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
-                  <div className="form-group"><label>Échéance</label><input className="form-input" type="date" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} /></div>
                 </div>
 
                 <h4 style={{ margin: '20px 0 12px', fontSize: 14, fontWeight: 700 }}>Articles</h4>

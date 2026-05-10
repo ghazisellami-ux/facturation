@@ -149,7 +149,6 @@ export default function AchatsPage() {
                 </div>
                 <div className="form-row">
                   <div className="form-group"><label>Date</label><input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
-                  <div className="form-group"><label>Échéance</label><input className="form-input" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} /></div>
                 </div>
 
                 <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20, marginTop: 16 }}>
