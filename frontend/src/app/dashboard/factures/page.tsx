@@ -117,7 +117,7 @@ export default function FacturesPage() {
         <div className="toolbar-left"><div className="search-input"><FiSearch /><input placeholder="Rechercher une facture..." value={search} onChange={e => setSearch(e.target.value)} /></div></div>
         <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={() => setShowExport(true)} style={{ width: 'auto' }}><FiDownload /> Exporter</button>
-          <button className="btn btn-primary btn-sm" onClick={() => { setForm({ client_id: '', date: new Date().toISOString().split('T')[0], due_date: '', notes: '', timbre_fiscal: 1.0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] }); setShowModal(true); }} style={{ width: 'auto' }}><FiPlus /> Nouvelle facture</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { setForm({ client_id: '', date: new Date().toISOString().split('T')[0], due_date: '', notes: '', timbre_fiscal: 1.0, withholding_rate: 0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] }); setShowModal(true); }} style={{ width: 'auto' }}><FiPlus /> Nouvelle facture</button>
         </div>
       </div>
 
