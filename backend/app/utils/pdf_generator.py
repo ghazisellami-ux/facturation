@@ -7,6 +7,7 @@ import os
 import tempfile
 import urllib.request
 from fpdf import FPDF
+from app.utils.amount_words import amount_to_words
 
 
 class InvoicePDF(FPDF):
@@ -40,6 +41,8 @@ class InvoicePDF(FPDF):
         info_parts = []
         if self.company.tax_id:
             info_parts.append(f"MF : {self.company.tax_id}")
+        if hasattr(self.company, 'rne') and self.company.rne:
+            info_parts.append(f"RNE : {self.company.rne}")
         if self.company.address:
             info_parts.append(self.company.address)
         if self.company.city:
@@ -74,6 +77,8 @@ class InvoicePDF(FPDF):
         footer = f"Genere par SIC Facture - {self.company.name}"
         if self.company.tax_id:
             footer += f" - MF : {self.company.tax_id}"
+        if hasattr(self.company, 'rne') and self.company.rne:
+            footer += f" - RNE : {self.company.rne}"
         self.cell(0, 5, footer, align='C')
 
     def _get_logo_path(self):
@@ -129,6 +134,8 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
         pdf.set_font('Helvetica', '', 8)
         if hasattr(client, 'tax_id') and client.tax_id:
             pdf.cell(0, 4, f"MF : {client.tax_id}", ln=True)
+        if hasattr(client, 'rne') and client.rne:
+            pdf.cell(0, 4, f"RNE : {client.rne}", ln=True)
         if hasattr(client, 'address') and client.address:
             pdf.cell(0, 4, client.address, ln=True)
         if hasattr(client, 'city') and client.city:
@@ -223,9 +230,20 @@ def generate_invoice_pdf(invoice, company, client, items) -> bytes:
 
     add_total_line('Net a payer', f"{fmt(invoice.total)} TND", bold=True, color=(0, 0, 0))
 
+    # ── MONTANT EN LETTRES ──
+    pdf.ln(6)
+    pdf.set_draw_color(218, 220, 224)
+    pdf.set_line_width(0.3)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(3)
+    pdf.set_font('Helvetica', 'B', 9)
+    pdf.set_text_color(0, 0, 0)
+    words = amount_to_words(invoice.total)
+    pdf.multi_cell(0, 5, f"Arretee la presente facture a la somme de : {words}.")
+
     # ── NOTES ──
     if invoice.notes:
-        pdf.ln(8)
+        pdf.ln(5)
         pdf.set_font('Helvetica', 'B', 10)
         pdf.set_text_color(0, 0, 0)
         pdf.cell(0, 6, 'NOTES', ln=True)

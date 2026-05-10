@@ -9,7 +9,7 @@ export default function ParametresPage() {
   const { user, company } = useAuth();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name: '', tax_id: '', address: '', city: '', postal_code: '',
+    name: '', tax_id: '', rne: '', address: '', city: '', postal_code: '',
     country: 'Tunisie', phone: '', email: '', website: '',
     invoice_prefix: 'FAC', devis_prefix: 'DEV',
   });
@@ -19,6 +19,7 @@ export default function ParametresPage() {
       setForm({
         name: company.name || '',
         tax_id: (company as any).tax_id || '',
+        rne: (company as any).rne || '',
         address: (company as any).address || '',
         city: (company as any).city || '',
         postal_code: (company as any).postal_code || '',
@@ -66,7 +67,10 @@ export default function ParametresPage() {
           <div className="card-header"><h3 className="card-title"><FiBriefcase style={{ marginRight: 8 }} /> Mon entreprise</h3></div>
           <div className="card-body">
             <div className="form-group"><label>Nom / Raison sociale *</label><input className="form-input" value={form.name} onChange={e => update('name', e.target.value)} required /></div>
-            <div className="form-group"><label>Matricule Fiscal (MF)</label><input className="form-input" value={form.tax_id} onChange={e => update('tax_id', e.target.value)} placeholder="0000000/X/A/M/000" /></div>
+            <div className="form-row">
+              <div className="form-group"><label>Matricule Fiscal (MF)</label><input className="form-input" value={form.tax_id} onChange={e => update('tax_id', e.target.value)} placeholder="0000000/X/A/M/000" /></div>
+              <div className="form-group"><label>RNE</label><input className="form-input" value={form.rne} onChange={e => update('rne', e.target.value)} placeholder="Registre National des Entreprises" /></div>
+            </div>
             <div className="form-group"><label>Adresse</label><input className="form-input" value={form.address} onChange={e => update('address', e.target.value)} /></div>
             <div className="form-row">
               <div className="form-group"><label>Ville</label><input className="form-input" value={form.city} onChange={e => update('city', e.target.value)} /></div>

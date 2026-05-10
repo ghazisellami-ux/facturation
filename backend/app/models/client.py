@@ -12,6 +12,7 @@ class Client(Base):
     company_id = Column(String, ForeignKey("companies.id"), nullable=False)
     name = Column(String, nullable=False, index=True)
     tax_id = Column(String, nullable=True)  # Matricule Fiscal
+    rne = Column(String, nullable=True)  # Registre National des Entreprises
     email = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     address = Column(Text, nullable=True)

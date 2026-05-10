@@ -11,6 +11,7 @@ class Company(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, nullable=False)
     tax_id = Column(String, nullable=True)  # Matricule Fiscal
+    rne = Column(String, nullable=True)  # Registre National des Entreprises
     address = Column(String, nullable=True)
     city = Column(String, nullable=True)
     postal_code = Column(String, nullable=True)

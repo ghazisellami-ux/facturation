@@ -12,6 +12,19 @@ settings = get_settings()
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+# Auto-migrate: add new columns if missing
+from sqlalchemy import text, inspect as sa_inspect
+_inspector = sa_inspect(engine)
+
+def _add_column_if_missing(table: str, column: str, col_type: str = "VARCHAR"):
+    cols = [c["name"] for c in _inspector.get_columns(table)]
+    if column not in cols:
+        with engine.begin() as conn:
+            conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {column} {col_type}'))
+
+_add_column_if_missing("companies", "rne")
+_add_column_if_missing("clients", "rne")
+
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,

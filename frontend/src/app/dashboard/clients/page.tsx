@@ -10,15 +10,15 @@ export default function ClientsPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({ name: '', tax_id: '', email: '', phone: '', address: '', city: '', country: 'Tunisie', contact_name: '', notes: '' });
+  const [form, setForm] = useState({ name: '', tax_id: '', rne: '', email: '', phone: '', address: '', city: '', country: 'Tunisie', contact_name: '', notes: '' });
 
   const load = () => { clientsAPI.list({ search: search || undefined }).then(r => { setClients(r.data); setLoading(false); }).catch(() => setLoading(false)); };
   useEffect(() => { load(); }, [search]);
 
-  const resetForm = () => setForm({ name: '', tax_id: '', email: '', phone: '', address: '', city: '', country: 'Tunisie', contact_name: '', notes: '' });
+  const resetForm = () => setForm({ name: '', tax_id: '', rne: '', email: '', phone: '', address: '', city: '', country: 'Tunisie', contact_name: '', notes: '' });
 
   const openCreate = () => { resetForm(); setEditing(null); setShowModal(true); };
-  const openEdit = (c: any) => { setForm({ name: c.name, tax_id: c.tax_id || '', email: c.email || '', phone: c.phone || '', address: c.address || '', city: c.city || '', country: c.country, contact_name: c.contact_name || '', notes: c.notes || '' }); setEditing(c); setShowModal(true); };
+  const openEdit = (c: any) => { setForm({ name: c.name, tax_id: c.tax_id || '', rne: c.rne || '', email: c.email || '', phone: c.phone || '', address: c.address || '', city: c.city || '', country: c.country, contact_name: c.contact_name || '', notes: c.notes || '' }); setEditing(c); setShowModal(true); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,15 +51,16 @@ export default function ClientsPage() {
       <div className="card">
         <div className="table-container">
           <table>
-            <thead><tr><th>Nom</th><th>MF</th><th>Email</th><th>Téléphone</th><th>Ville</th><th>Solde</th><th></th></tr></thead>
+            <thead><tr><th>Nom</th><th>MF</th><th>RNE</th><th>Email</th><th>Téléphone</th><th>Ville</th><th>Solde</th><th></th></tr></thead>
             <tbody>
-              {loading ? <tr><td colSpan={7}><div className="loading-spinner" /></td></tr> :
+              {loading ? <tr><td colSpan={8}><div className="loading-spinner" /></td></tr> :
                clients.length === 0 ? (
-                <tr><td colSpan={7}><div className="empty-state"><FiUsers style={{ fontSize: 48 }} /><h3>Aucun client</h3><p>Créez votre premier client pour commencer</p></div></td></tr>
+                <tr><td colSpan={8}><div className="empty-state"><FiUsers style={{ fontSize: 48 }} /><h3>Aucun client</h3><p>Créez votre premier client pour commencer</p></div></td></tr>
               ) : clients.map(c => (
                 <tr key={c.id}>
                   <td style={{ fontWeight: 600 }}>{c.name}</td>
                   <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{c.tax_id || '—'}</td>
+                  <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{c.rne || '—'}</td>
                   <td>{c.email || '—'}</td>
                   <td>{c.phone || '—'}</td>
                   <td>{c.city || '—'}</td>
@@ -84,6 +85,9 @@ export default function ClientsPage() {
                 <div className="form-group"><label>Nom / Raison sociale *</label><input className="form-input" value={form.name} onChange={e => update('name', e.target.value)} required /></div>
                 <div className="form-row">
                   <div className="form-group"><label>Matricule Fiscal</label><input className="form-input" value={form.tax_id} onChange={e => update('tax_id', e.target.value)} /></div>
+                  <div className="form-group"><label>RNE</label><input className="form-input" value={form.rne} onChange={e => update('rne', e.target.value)} /></div>
+                </div>
+                <div className="form-row">
                   <div className="form-group"><label>Personne de contact</label><input className="form-input" value={form.contact_name} onChange={e => update('contact_name', e.target.value)} /></div>
                 </div>
                 <div className="form-row">
