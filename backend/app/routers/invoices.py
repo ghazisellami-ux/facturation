@@ -187,6 +187,35 @@ def create_invoice(
     invoice.total = round(total_subtotal + total_tva + total_fodec + invoice.timbre_fiscal, 3)
     invoice.balance_due = invoice.total
 
+    # ── Auto-create retenue à la source if TTC >= 1000 and rate provided ──
+    if (data.invoice_type == "facture"
+        and invoice.total >= 1000
+        and data.withholding_rate
+        and data.withholding_rate in (1, 1.5, 3)):
+        from app.models.withholding import WithholdingTax
+        # base = HT amount (subtotal)
+        base_ht = round(total_subtotal, 3)
+        tax_amount = round(base_ht * data.withholding_rate / 100, 3)
+
+        # Get client info for beneficiary fields
+        client = db.query(Client).filter(Client.id == data.client_id).first() if data.client_id else None
+
+        wh = WithholdingTax(
+            company_id=company.id,
+            type="recue",
+            rate=data.withholding_rate,
+            base_amount=base_ht,
+            tax_amount=tax_amount,
+            date=invoice.date or date.today(),
+            reference=invoice.reference,
+            invoice_id=invoice.id,
+            client_id=data.client_id,
+            beneficiary_name=client.name if client else None,
+            beneficiary_tax_id=client.tax_id if client else None,
+            notes=f"Retenue auto - Facture {invoice.reference}",
+        )
+        db.add(wh)
+
     db.commit()
     db.refresh(invoice)
 

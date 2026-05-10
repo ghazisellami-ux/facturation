@@ -43,6 +43,7 @@ class InvoiceCreate(BaseModel):
     notes: Optional[str] = None
     conditions: Optional[str] = None
     timbre_fiscal: float = 1.0
+    withholding_rate: Optional[float] = None  # 1, 1.5, or 3 — auto-create retenue
     items: List[InvoiceItemCreate] = []
 
 

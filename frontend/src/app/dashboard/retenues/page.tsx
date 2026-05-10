@@ -220,6 +220,10 @@ export default function RetenuesPage() {
                       <input type="radio" name="rate" value={1} checked={form.rate === 1} onChange={() => setForm(p => ({ ...p, rate: 1 }))} style={{ display: 'none' }} />
                       1%
                     </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, border: form.rate === 1.5 ? '2px solid var(--primary)' : '2px solid var(--border)', cursor: 'pointer', background: form.rate === 1.5 ? 'var(--primary-light)' : 'transparent', flex: 1, justifyContent: 'center', fontWeight: 600, fontSize: 16 }}>
+                      <input type="radio" name="rate" value={1.5} checked={form.rate === 1.5} onChange={() => setForm(p => ({ ...p, rate: 1.5 }))} style={{ display: 'none' }} />
+                      1,5%
+                    </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, border: form.rate === 3 ? '2px solid var(--primary)' : '2px solid var(--border)', cursor: 'pointer', background: form.rate === 3 ? 'var(--primary-light)' : 'transparent', flex: 1, justifyContent: 'center', fontWeight: 600, fontSize: 16 }}>
                       <input type="radio" name="rate" value={3} checked={form.rate === 3} onChange={() => setForm(p => ({ ...p, rate: 3 }))} style={{ display: 'none' }} />
                       3%

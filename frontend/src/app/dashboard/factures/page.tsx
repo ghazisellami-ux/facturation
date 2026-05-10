@@ -31,7 +31,7 @@ export default function FacturesPage() {
   const [showExport, setShowExport] = useState(false);
   const [exportYear, setExportYear] = useState(new Date().getFullYear());
   const [exportMonth, setExportMonth] = useState(0);
-  const [form, setForm] = useState({ client_id: '', date: '', due_date: '', notes: '', timbre_fiscal: 1.0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] as InvoiceItem[] });
+  const [form, setForm] = useState({ client_id: '', date: '', due_date: '', notes: '', timbre_fiscal: 1.0, withholding_rate: 0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] as InvoiceItem[] });
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); setForm(f => ({ ...f, date: new Date().toISOString().split('T')[0] })); }, []);
 
@@ -84,6 +84,7 @@ export default function FacturesPage() {
         invoice_type: 'facture',
         client_id: form.client_id || null,
         due_date: form.due_date || null,
+        withholding_rate: form.withholding_rate > 0 ? form.withholding_rate : null,
         items: form.items.map(item => ({
           ...item,
           product_id: item.product_id || null,
@@ -219,6 +220,35 @@ export default function FacturesPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Retenue à la source auto */}
+                {grandTotal >= 1000 && (
+                  <div style={{ marginTop: 16, padding: '14px 18px', borderRadius: 10, border: '2px solid var(--warning)', background: 'rgba(245,158,11,0.06)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <FiFileText /> Retenue à la source (Facture ≥ 1 000 TND)
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {[{ rate: 0, label: 'Aucune' }, { rate: 1, label: '1%' }, { rate: 1.5, label: '1,5%' }, { rate: 3, label: '3%' }].map(opt => (
+                        <label key={opt.rate} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          padding: '8px 16px', borderRadius: 8, cursor: 'pointer', flex: 1,
+                          border: form.withholding_rate === opt.rate ? '2px solid var(--primary)' : '2px solid var(--border)',
+                          background: form.withholding_rate === opt.rate ? 'var(--primary-light)' : 'transparent',
+                          fontWeight: 600, fontSize: 14, transition: 'all 0.2s',
+                        }}>
+                          <input type="radio" name="wh_rate" checked={form.withholding_rate === opt.rate} onChange={() => setForm(p => ({ ...p, withholding_rate: opt.rate }))} style={{ display: 'none' }} />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                    {form.withholding_rate > 0 && (
+                      <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6 }}>
+                        <span>Retenue {form.withholding_rate}% sur {fmt(totals.subtotal)} HT</span>
+                        <strong style={{ color: 'var(--primary)' }}>{fmt(totals.subtotal * form.withholding_rate / 100)} TND</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="form-group" style={{ marginTop: 20 }}><label>Notes</label><textarea className="form-input" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} style={{ resize: 'vertical' }} /></div>
               </div>
