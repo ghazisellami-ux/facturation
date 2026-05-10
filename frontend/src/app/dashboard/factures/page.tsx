@@ -6,6 +6,8 @@ import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiX, FiFileText, FiEye, FiDownload
 import Cookies from 'js-cookie';
 import Link from 'next/link';
 
+const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
 const statusMap: Record<string, { label: string; className: string }> = {
   brouillon: { label: 'Brouillon', className: 'badge-default' },
   envoyee: { label: 'Envoyée', className: 'badge-info' },
@@ -26,6 +28,9 @@ export default function FacturesPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedClient, setSelectedClient] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [exportYear, setExportYear] = useState(new Date().getFullYear());
+  const [exportMonth, setExportMonth] = useState(0);
   const [form, setForm] = useState({ client_id: '', date: '', due_date: '', notes: '', timbre_fiscal: 1.0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] as InvoiceItem[] });
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); setForm(f => ({ ...f, date: new Date().toISOString().split('T')[0] })); }, []);
@@ -109,7 +114,8 @@ export default function FacturesPage() {
     <>
       <div className="toolbar">
         <div className="toolbar-left"><div className="search-input"><FiSearch /><input placeholder="Rechercher une facture..." value={search} onChange={e => setSearch(e.target.value)} /></div></div>
-        <div className="toolbar-right">
+        <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowExport(true)} style={{ width: 'auto' }}><FiDownload /> Exporter</button>
           <button className="btn btn-primary btn-sm" onClick={() => { setForm({ client_id: '', date: new Date().toISOString().split('T')[0], due_date: '', notes: '', timbre_fiscal: 1.0, items: [{ product_id: '', description: '', quantity: 1, unit: 'unité', unit_price: 0, discount_percent: 0, tva_rate: 19, fodec_rate: 0 }] }); setShowModal(true); }} style={{ width: 'auto' }}><FiPlus /> Nouvelle facture</button>
         </div>
       </div>
@@ -221,6 +227,31 @@ export default function FacturesPage() {
                 <button type="submit" className="btn btn-primary" style={{ width: 'auto' }}>Créer la facture</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showExport && (
+        <div className="modal-overlay" onClick={() => setShowExport(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="modal-header"><h3 className="modal-title">Exporter les factures</h3><button className="btn btn-icon" onClick={() => setShowExport(false)}><FiX /></button></div>
+            <div className="modal-body">
+              <div className="form-group"><label>Année</label>
+                <select className="form-input" value={exportYear} onChange={e => setExportYear(Number(e.target.value))}>
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>Mois</label>
+                <select className="form-input" value={exportMonth} onChange={e => setExportMonth(Number(e.target.value))}>
+                  <option value={0}>Toute l&apos;année</option>
+                  {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: 8 }}>
+              <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/export/factures?year=${exportYear}${exportMonth ? '&month=' + exportMonth : ''}&format=xlsx&token=${Cookies.get('access_token')}`} className="btn btn-primary" style={{ width: 'auto', textDecoration: 'none' }} onClick={() => setShowExport(false)}><FiDownload /> Excel</a>
+              <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/export/factures?year=${exportYear}${exportMonth ? '&month=' + exportMonth : ''}&format=csv&token=${Cookies.get('access_token')}`} className="btn btn-secondary" style={{ width: 'auto', textDecoration: 'none' }} onClick={() => setShowExport(false)}><FiDownload /> CSV</a>
+            </div>
           </div>
         </div>
       )}

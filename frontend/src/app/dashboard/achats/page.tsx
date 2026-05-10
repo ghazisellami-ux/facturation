@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { FiPlus, FiSearch, FiTrash2, FiX, FiShoppingCart, FiDownload, FiCode, FiFilter } from 'react-icons/fi';
 import Cookies from 'js-cookie';
 
+const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 export default function AchatsPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -12,6 +13,9 @@ export default function AchatsPage() {
   const [search, setSearch] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showModal, setShowModal] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [exportYear, setExportYear] = useState(new Date().getFullYear());
+  const [exportMonth, setExportMonth] = useState(0);
   const [form, setForm] = useState({
     supplier_id: '', date: '', due_date: '', notes: '',
     montant_ht: 0, tva_rate: 19, fodec: false, fodec_rate: 1, timbre_fiscal: 1.0,
@@ -88,7 +92,8 @@ export default function AchatsPage() {
     <>
       <div className="toolbar">
         <div className="toolbar-left"><div className="search-input"><FiSearch /><input placeholder="Rechercher une facture d'achat..." value={search} onChange={e => setSearch(e.target.value)} /></div></div>
-        <div className="toolbar-right">
+        <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowExport(true)} style={{ width: 'auto' }}><FiDownload /> Exporter</button>
           <button className="btn btn-primary btn-sm" onClick={openCreate} style={{ width: 'auto' }}><FiPlus /> Nouvelle facture d&apos;achat</button>
         </div>
       </div>
@@ -206,6 +211,31 @@ export default function AchatsPage() {
                 <button type="submit" className="btn btn-primary" style={{ width: 'auto' }}>Créer la facture d&apos;achat</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showExport && (
+        <div className="modal-overlay" onClick={() => setShowExport(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="modal-header"><h3 className="modal-title">Exporter les factures d&apos;achat</h3><button className="btn btn-icon" onClick={() => setShowExport(false)}><FiX /></button></div>
+            <div className="modal-body">
+              <div className="form-group"><label>Année</label>
+                <select className="form-input" value={exportYear} onChange={e => setExportYear(Number(e.target.value))}>
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>Mois</label>
+                <select className="form-input" value={exportMonth} onChange={e => setExportMonth(Number(e.target.value))}>
+                  <option value={0}>Toute l&apos;année</option>
+                  {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: 8 }}>
+              <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/export/achats?year=${exportYear}${exportMonth ? '&month=' + exportMonth : ''}&format=xlsx&token=${Cookies.get('access_token')}`} className="btn btn-primary" style={{ width: 'auto', textDecoration: 'none' }} onClick={() => setShowExport(false)}><FiDownload /> Excel</a>
+              <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/export/achats?year=${exportYear}${exportMonth ? '&month=' + exportMonth : ''}&format=csv&token=${Cookies.get('access_token')}`} className="btn btn-secondary" style={{ width: 'auto', textDecoration: 'none' }} onClick={() => setShowExport(false)}><FiDownload /> CSV</a>
+            </div>
           </div>
         </div>
       )}
