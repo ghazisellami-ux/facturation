@@ -15,23 +15,24 @@ export default function ParametresPage() {
   });
 
   useEffect(() => {
-    if (company) {
+    authAPI.getCompany().then(res => {
+      const c = res.data;
       setForm({
-        name: company.name || '',
-        tax_id: (company as any).tax_id || '',
-        rne: (company as any).rne || '',
-        address: (company as any).address || '',
-        city: (company as any).city || '',
-        postal_code: (company as any).postal_code || '',
-        country: (company as any).country || 'Tunisie',
-        phone: (company as any).phone || '',
-        email: (company as any).email || '',
-        website: (company as any).website || '',
-        invoice_prefix: (company as any).invoice_prefix || 'FAC',
-        devis_prefix: (company as any).devis_prefix || 'DEV',
+        name: c.name || '',
+        tax_id: c.tax_id || '',
+        rne: c.rne || '',
+        address: c.address || '',
+        city: c.city || '',
+        postal_code: c.postal_code || '',
+        country: c.country || 'Tunisie',
+        phone: c.phone || '',
+        email: c.email || '',
+        website: c.website || '',
+        invoice_prefix: c.invoice_prefix || 'FAC',
+        devis_prefix: c.devis_prefix || 'DEV',
       });
-    }
-  }, [company]);
+    }).catch(() => {});
+  }, []);
 
   const update = (field: string, value: string) => setForm(p => ({ ...p, [field]: value }));
 
