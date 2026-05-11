@@ -1,10 +1,10 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
-import { FiGrid, FiFileText, FiUsers, FiShoppingCart, FiSettings, FiLogOut, FiFile, FiTruck, FiPercent, FiUserPlus } from 'react-icons/fi';
+import { FiGrid, FiFileText, FiUsers, FiShoppingCart, FiSettings, FiLogOut, FiFile, FiTruck, FiPercent, FiUserPlus, FiMenu, FiX } from 'react-icons/fi';
 
 const navItems = [
   { section: 'Principal', items: [
@@ -39,11 +39,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading || !user) return <div className="page-loading"><div className="loading-spinner" /></div>;
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const getInitials = () => `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
 
   return (
     <div className="app-layout">
-      <aside className="sidebar">
+      {/* Mobile overlay */}
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <Image src="/logo-sic.jpg" alt="SIC" width={140} height={70} style={{ filter: 'invert(1)', objectFit: 'contain', display: 'block' }} priority />
@@ -55,6 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="sidebar-section-title">{section.section}</div>
               {section.items.map((item) => (
                 <Link key={item.href} href={item.href}
+                  onClick={() => setSidebarOpen(false)}
                   className={`sidebar-link ${pathname === item.href ? 'active' : ''}`}>
                   <item.icon /> {item.label}
                 </Link>
@@ -75,6 +79,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="header-avatar" title={`${user.first_name} ${user.last_name}`}>
               {getInitials()}
             </div>
+            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(o => !o)} aria-label="Menu">
+              <FiMenu />
+            </button>
           </div>
         </header>
         <div className="page-content">{children}</div>
