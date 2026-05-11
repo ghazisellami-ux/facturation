@@ -33,13 +33,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   useEffect(() => {
     if (!isLoading && !user) router.replace('/login');
   }, [user, isLoading, router]);
 
   if (isLoading || !user) return <div className="page-loading"><div className="loading-spinner" /></div>;
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const getInitials = () => `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
 
   return (
