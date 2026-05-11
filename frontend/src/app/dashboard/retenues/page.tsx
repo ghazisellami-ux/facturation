@@ -243,7 +243,7 @@ export default function RetenuesPage() {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Montant base HT</label>
+                    <label>Montant base TTC</label>
                     <input className="form-input" type="number" step="0.001" value={form.base_amount} onChange={e => setForm(p => ({ ...p, base_amount: parseFloat(e.target.value) || 0 }))} required />
                   </div>
                   <div className="form-group">

@@ -193,9 +193,9 @@ def create_invoice(
         and data.withholding_rate
         and data.withholding_rate in (1, 1.5, 3)):
         from app.models.withholding import WithholdingTax
-        # base = HT amount (subtotal)
-        base_ht = round(total_subtotal, 3)
-        tax_amount = round(base_ht * data.withholding_rate / 100, 3)
+        # base = TTC amount (montant total de la facture)
+        base_ttc = round(invoice.total, 3)
+        tax_amount = round(base_ttc * data.withholding_rate / 100, 3)
 
         # Get client info for beneficiary fields
         client = db.query(Client).filter(Client.id == data.client_id).first() if data.client_id else None
@@ -204,7 +204,7 @@ def create_invoice(
             company_id=company.id,
             type="recue",
             rate=data.withholding_rate,
-            base_amount=base_ht,
+            base_amount=base_ttc,
             tax_amount=tax_amount,
             date=invoice.date or date.today(),
             reference=invoice.reference,

@@ -156,13 +156,16 @@ def generate_withholding_pdf(withholding, company, client_or_supplier) -> bytes:
     pdf.ln(8)
 
     # ── Tableau de détails ──
-    base_ht = withholding.base_amount or 0
+    # base_amount = montant TTC de la facture
+    base_ttc = withholding.base_amount or 0
     rate = withholding.rate or 0
     tva_rate = 19.0  # default TVA rate
-    tva_due = round(base_ht * tva_rate / 100, 3)
-    total_ttc = round(base_ht + tva_due, 3)
+    # Déduire le HT depuis le TTC: HT = TTC / (1 + TVA%)
+    base_ht = round(base_ttc / (1 + tva_rate / 100), 3)
+    tva_due = round(base_ttc - base_ht, 3)
+    total_ttc = round(base_ttc, 3)
     tva_retenue = 0  # TVA retenue à la source (usually 0)
-    montant_retenue = withholding.tax_amount or round(base_ht * rate / 100, 3)
+    montant_retenue = withholding.tax_amount or round(base_ttc * rate / 100, 3)
     montant_servi = round(total_ttc - montant_retenue, 3)
 
     # Header row
@@ -265,12 +268,14 @@ def generate_withholding_xml(withholding, company, client_or_supplier) -> str:
     Generate an XML representation of the withholding certificate.
     Compatible with Tunisian tax authority format.
     """
-    base_ht = withholding.base_amount or 0
+    # base_amount = montant TTC de la facture
+    base_ttc = withholding.base_amount or 0
     rate = withholding.rate or 0
     tva_rate = 19.0
-    tva_due = round(base_ht * tva_rate / 100, 3)
-    total_ttc = round(base_ht + tva_due, 3)
-    montant_retenue = withholding.tax_amount or round(base_ht * rate / 100, 3)
+    base_ht = round(base_ttc / (1 + tva_rate / 100), 3)
+    tva_due = round(base_ttc - base_ht, 3)
+    total_ttc = round(base_ttc, 3)
+    montant_retenue = withholding.tax_amount or round(base_ttc * rate / 100, 3)
     montant_servi = round(total_ttc - montant_retenue, 3)
     date_str = withholding.date.strftime("%Y-%m-%d") if withholding.date else ""
     year_str = str(withholding.date.year) if withholding.date else ""

@@ -243,8 +243,8 @@ export default function FacturesPage() {
                     </div>
                     {form.withholding_rate > 0 && (
                       <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6 }}>
-                        <span>Retenue {form.withholding_rate}% sur {fmt(totals.subtotal)} HT</span>
-                        <strong style={{ color: 'var(--primary)' }}>{fmt(totals.subtotal * form.withholding_rate / 100)} TND</strong>
+                        <span>Retenue {form.withholding_rate}% sur {fmt(grandTotal)} TTC</span>
+                        <strong style={{ color: 'var(--primary)' }}>{fmt(grandTotal * form.withholding_rate / 100)} TND</strong>
                       </div>
                     )}
                   </div>
