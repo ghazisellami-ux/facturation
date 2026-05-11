@@ -116,8 +116,8 @@ def create_withholding(
 ):
     company = get_user_company(db, current_user)
 
-    if data.rate not in (1.0, 3.0, 1, 3):
-        raise HTTPException(status_code=400, detail="Le taux doit être 1% ou 3%")
+    if data.rate not in (1.0, 1.5, 3.0, 1, 3):
+        raise HTTPException(status_code=400, detail="Le taux doit être 1%, 1.5% ou 3%")
     if data.type not in ("emise", "recue"):
         raise HTTPException(status_code=400, detail="Le type doit être 'emise' ou 'recue'")
 
@@ -190,3 +190,75 @@ def delete_withholding(
     db.delete(w)
     db.commit()
     return {"message": "Retenue supprimée"}
+
+
+@router.get("/{withholding_id}/pdf")
+def download_withholding_pdf(
+    withholding_id: str,
+    token: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Télécharger le certificat de retenue à la source en PDF."""
+    from fastapi.responses import Response
+    from app.utils.withholding_pdf import generate_withholding_pdf
+
+    company = get_user_company(db, current_user)
+    w = db.query(WithholdingTax).filter(
+        WithholdingTax.id == withholding_id, WithholdingTax.company_id == company.id
+    ).first()
+    if not w:
+        raise HTTPException(status_code=404, detail="Retenue non trouvée")
+
+    # Resolve beneficiary
+    beneficiary = None
+    if w.client_id:
+        beneficiary = db.query(Client).filter(Client.id == w.client_id).first()
+    elif w.supplier_id:
+        beneficiary = db.query(Supplier).filter(Supplier.id == w.supplier_id).first()
+
+    pdf_bytes = generate_withholding_pdf(w, company, beneficiary)
+    ref = w.reference or w.id[:8]
+    filename = f"Certificat_RS_{ref}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{withholding_id}/xml")
+def download_withholding_xml(
+    withholding_id: str,
+    token: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Télécharger le certificat de retenue à la source en XML."""
+    from fastapi.responses import Response
+    from app.utils.withholding_pdf import generate_withholding_xml
+
+    company = get_user_company(db, current_user)
+    w = db.query(WithholdingTax).filter(
+        WithholdingTax.id == withholding_id, WithholdingTax.company_id == company.id
+    ).first()
+    if not w:
+        raise HTTPException(status_code=404, detail="Retenue non trouvée")
+
+    beneficiary = None
+    if w.client_id:
+        beneficiary = db.query(Client).filter(Client.id == w.client_id).first()
+    elif w.supplier_id:
+        beneficiary = db.query(Supplier).filter(Supplier.id == w.supplier_id).first()
+
+    xml_str = generate_withholding_xml(w, company, beneficiary)
+    ref = w.reference or w.id[:8]
+    filename = f"Certificat_RS_{ref}.xml"
+
+    return Response(
+        content=xml_str.encode("utf-8"),
+        media_type="application/xml",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+

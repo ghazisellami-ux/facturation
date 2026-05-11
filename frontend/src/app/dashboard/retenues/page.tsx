@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { withholdingsAPI, clientsAPI, suppliersAPI, getErrorMessage } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { FiPlus, FiSearch, FiTrash2, FiFileText, FiX, FiPercent, FiFilter, FiDownload } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiTrash2, FiFileText, FiX, FiPercent, FiFilter, FiDownload, FiCode } from 'react-icons/fi';
 import Cookies from 'js-cookie';
 
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -51,6 +51,12 @@ export default function RetenuesPage() {
   useEffect(() => { load(); }, [activeTab, search, selectedYear, selectedClient]);
 
   const fmt = (n: number) => new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(n);
+
+  const getWhDownloadUrl = (id: string, format: 'pdf' | 'xml') => {
+    const token = Cookies.get('access_token');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+    return token ? `${apiUrl}/api/withholdings/${id}/${format}?token=${token}` : '';
+  };
 
   const taxAmount = form.base_amount * form.rate / 100;
 
@@ -194,7 +200,11 @@ export default function RetenuesPage() {
                   <td className="text-amount">{fmt(w.base_amount)}</td>
                   <td className="text-amount text-bold" style={{ color: 'var(--primary)' }}>{fmt(w.tax_amount)} <span className="currency">TND</span></td>
                   <td>
-                    <button className="btn btn-icon" onClick={() => handleDelete(w.id)} style={{ color: 'var(--danger)' }}><FiTrash2 /></button>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <a href={getWhDownloadUrl(w.id, 'pdf')} className="btn btn-icon" title="Télécharger PDF" style={{ color: 'var(--primary)' }}><FiDownload /></a>
+                      <a href={getWhDownloadUrl(w.id, 'xml')} className="btn btn-icon" title="Télécharger XML" style={{ color: 'var(--success)' }}><FiCode /></a>
+                      <button className="btn btn-icon" onClick={() => handleDelete(w.id)} style={{ color: 'var(--danger)' }}><FiTrash2 /></button>
+                    </div>
                   </td>
                 </tr>
               ))}
